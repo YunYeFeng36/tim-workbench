@@ -5,154 +5,267 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>今日工作台 · Tim</title>
 <style>
-  :root{--bg:#f5f7fa;--panel:#fff;--line:#e6e9ef;--ink:#1f2733;--sub:#6b7585;--brand:#2f6fed;--brand-soft:#eaf1ff;--red:#e23b3b;--green:#1f9d55;--amber:#e6902b;--shadow:0 1px 3px rgba(20,40,80,.06),0 6px 24px rgba(20,40,80,.05)}
+  :root{
+    --bg1:#eef2fb;--bg2:#f5f1fb;--panel:#ffffff;--panel2:#fbfcfe;
+    --line:#e7eaf2;--ink:#1c2433;--sub:#767f90;
+    --brand:#3a6df0;--brand2:#5b8cff;--brand-soft:#eaf0ff;
+    --sidebar1:#1d2742;--sidebar2:#141d35;--sink:#aeb8d0;
+    --red:#e23b3b;--green:#16a35a;--amber:#e6902b;
+    --shadow:0 1px 2px rgba(20,40,80,.05),0 8px 28px rgba(20,40,80,.07);
+    --shadow-lg:0 12px 40px rgba(20,40,80,.14);
+    --radius:16px;
+  }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html,body{height:100%}
-  body{font:14px/1.5 -apple-system,"Segoe UI",Roboto,"Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);display:flex;height:100vh;overflow:hidden}
-  .sidebar{width:230px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;flex-shrink:0;transition:transform .25s}
-  .brand{padding:18px 18px 14px;border-bottom:1px solid var(--line)}
-  .brand h1{font-size:16px;font-weight:700;letter-spacing:.5px}
-  .brand p{font-size:12px;color:var(--sub);margin-top:2px}
-  .nav{padding:10px;flex:1;overflow:auto}
-  .nav-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:9px;cursor:pointer;color:var(--ink);font-weight:500;margin-bottom:4px;user-select:none}
-  .nav-item:hover{background:var(--brand-soft)}
-  .nav-item.active{background:var(--brand);color:#fff}
-  .nav-item .dot{width:8px;height:8px;border-radius:50%;background:var(--brand);flex-shrink:0}
-  .nav-item.active .dot{background:#fff}
-  .nav-item .count{margin-left:auto;font-size:12px;background:rgba(0,0,0,.08);padding:1px 8px;border-radius:10px}
-  .nav-item.active .count{background:rgba(255,255,255,.25)}
-  .nav-item{position:relative;transition:background .2s,color .2s,transform .15s}
-  .nav-item:hover{transform:translateX(3px)}
+  body{font:14px/1.5 -apple-system,"Segoe UI",Roboto,"Microsoft YaHei",sans-serif;
+    background:linear-gradient(135deg,var(--bg1),var(--bg2));
+    color:var(--ink);display:flex;height:100vh;overflow:hidden}
+  .sidebar{width:240px;background:linear-gradient(180deg,var(--sidebar1),var(--sidebar2));
+    display:flex;flex-direction:column;flex-shrink:0;transition:transform .28s cubic-bezier(.4,0,.2,1);
+    box-shadow:4px 0 24px rgba(15,25,55,.18);position:relative;z-index:50}
+  .brand{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:12px}
+  .brand .logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--brand2),var(--brand));
+    display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(58,109,240,.45);flex-shrink:0}
+  .brand .logo svg{width:21px;height:21px;stroke:#fff;fill:none;stroke-width:1.9}
+  .brand h1{font-size:16px;font-weight:700;color:#fff;letter-spacing:.4px;line-height:1.2}
+  .brand p{font-size:11.5px;color:var(--sink);margin-top:3px}
+  .nav{padding:14px 12px;flex:1;overflow:auto}
+  .nav-group{font-size:10.5px;color:rgba(174,184,208,.6);letter-spacing:1.2px;text-transform:uppercase;
+    padding:6px 12px;margin-top:6px}
+  .nav-item{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:11px;cursor:pointer;
+    color:var(--sink);font-weight:500;margin-bottom:3px;user-select:none;position:relative;
+    transition:background .2s,color .2s,transform .15s}
+  .nav-item .ni{width:19px;height:19px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.8;opacity:.9;
+    transition:transform .3s}
+  .nav-item:hover{background:rgba(255,255,255,.07);color:#fff;transform:translateX(3px)}
   .nav-item:active{transform:scale(.97)}
-  .nav-item::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%) scaleY(0);width:4px;height:58%;background:rgba(255,255,255,.92);border-radius:0 4px 4px 0;transition:transform .25s}
+  .nav-item.active{background:linear-gradient(90deg,rgba(58,109,240,.35),rgba(58,109,240,.12));color:#fff}
+  .nav-item.active .ni{transform:scale(1.08)}
+  .nav-item::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%) scaleY(0);
+    width:4px;height:56%;background:linear-gradient(180deg,var(--brand2),var(--brand));
+    border-radius:0 4px 4px 0;transition:transform .25s}
   .nav-item.active::before{transform:translateY(-50%) scaleY(1)}
-  .nav-item .dot{transition:transform .3s}
-  .nav-item.active .dot{animation:dotPulse 1.8s ease-in-out infinite}
-  @keyframes dotPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.45);opacity:.65}}
+  .nav-item .count{margin-left:auto;font-size:11.5px;background:rgba(255,255,255,.13);padding:2px 9px;
+    border-radius:11px;color:#e8ecf5;font-weight:600;min-width:22px;text-align:center}
+  .nav-item.active .count{background:rgba(255,255,255,.22)}
   .nav-item{animation:navIn .42s ease backwards}
-  .nav-item:nth-child(1){animation-delay:.03s}.nav-item:nth-child(2){animation-delay:.07s}.nav-item:nth-child(3){animation-delay:.11s}.nav-item:nth-child(4){animation-delay:.15s}.nav-item:nth-child(5){animation-delay:.19s}.nav-item:nth-child(6){animation-delay:.23s}.nav-item:nth-child(7){animation-delay:.27s}.nav-item:nth-child(8){animation-delay:.31s}
+  .nav-item:nth-child(2){animation-delay:.03s}.nav-item:nth-child(3){animation-delay:.07s}
+  .nav-item:nth-child(4){animation-delay:.11s}.nav-item:nth-child(5){animation-delay:.15s}
+  .nav-item:nth-child(6){animation-delay:.19s}.nav-item:nth-child(7){animation-delay:.23s}
+  .nav-item:nth-child(8){animation-delay:.27s}.nav-item:nth-child(9){animation-delay:.31s}
+  .nav-item:nth-child(10){animation-delay:.35s}
   @keyframes navIn{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:translateX(0)}}
-  .workcfg{padding:12px 14px;border-top:1px solid var(--line);font-size:12px;color:var(--sub)}
-  .workcfg input{width:62px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;font-size:12px;color:var(--ink)}
-  .workcfg .row{display:flex;align-items:center;gap:6px;margin-top:6px}
-  .workcfg button{margin-top:8px;width:100%;border:1px solid var(--brand);background:var(--brand-soft);color:var(--brand);border-radius:7px;padding:6px;cursor:pointer;font-weight:600}
-  .workcfg .syncbtn{background:#fff;border:1px solid var(--line);color:var(--ink)}
+  .workcfg{margin:8px 12px 14px;padding:14px;border-radius:14px;background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.07);font-size:12px;color:var(--sink)}
+  .workcfg .wt-title{color:#dfe5f3;font-weight:700;font-size:12px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .workcfg input[type=time]{width:64px;border:1px solid rgba(255,255,255,.14);border-radius:7px;padding:5px 7px;
+    font-size:12px;color:#e8ecf5;background:rgba(255,255,255,.06)}
+  .workcfg .row{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .workcfg label.chk{display:flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer}
+  .workcfg button{margin-top:9px;width:100%;border:none;border-radius:9px;padding:8px;cursor:pointer;
+    font-weight:600;font-size:12.5px;transition:filter .15s,transform .1s}
+  .workcfg button:hover{filter:brightness(1.08)}
+  .workcfg button:active{transform:scale(.98)}
+  .workcfg #enableNotify{background:linear-gradient(135deg,var(--brand2),var(--brand));color:#fff}
+  .workcfg .syncbtn{background:rgba(255,255,255,.1);color:#e8ecf5;border:1px solid rgba(255,255,255,.14)}
   .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-  .topbar{padding:16px 22px;border-bottom:1px solid var(--line);background:var(--panel);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-  .topbar h2{font-size:18px;font-weight:700}
-  .topbar .date{color:var(--sub);font-size:13px}
-  .topbar .actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
-  .menu-btn{display:none;border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:16px}
-  .btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:600;color:var(--ink);font-size:13px}
-  .btn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
-  .btn:hover{filter:brightness(.97)}
-  .reminder{margin:14px 22px 0;padding:12px 16px;border-radius:10px;background:linear-gradient(90deg,#fff4e6,#ffe9d6);border:1px solid #f3c98b;display:none;align-items:flex-start;gap:10px}
-  .reminder.show{display:flex;animation:pulse 2s infinite}
-  .reminder .ic{font-size:18px}.reminder .txt{flex:1}.reminder .txt b{color:var(--amber)}.reminder .close{cursor:pointer;color:var(--sub);font-size:16px}
-  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(230,144,43,.5)}70%{box-shadow:0 0 0 10px rgba(230,144,43,0)}100%{box-shadow:0 0 0 0 rgba(230,144,43,0)}}
-  .content{padding:18px 22px;overflow:auto;flex:1}
-  .quick{padding:12px 16px;background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;box-shadow:var(--shadow)}
-  .quick input,.quick select{border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:13px;color:var(--ink)}
-  .quick input.title{flex:1;min-width:160px}
-  .quick .mini{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--sub)}
-  .list{display:flex;flex-direction:column;gap:10px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 16px;display:flex;align-items:flex-start;gap:12px;box-shadow:var(--shadow)}
-  .card .chk{width:20px;height:20px;border:2px solid var(--line);border-radius:6px;cursor:pointer;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff}
+  .topbar{padding:16px 24px;border-bottom:1px solid var(--line);
+    background:rgba(255,255,255,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;position:relative;z-index:30}
+  .topbar h2{font-size:19px;font-weight:800;letter-spacing:.3px}
+  .topbar .date{color:var(--sub);font-size:12.5px}
+  .topbar .actions{margin-left:auto;display:flex;gap:9px;flex-wrap:wrap}
+  .menu-btn{display:none;border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 13px;
+    cursor:pointer;font-size:16px;color:var(--ink)}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 15px;cursor:pointer;
+    font-weight:600;color:var(--ink);font-size:13px;transition:filter .15s,box-shadow .15s,transform .1s}
+  .btn:hover{filter:brightness(.98);box-shadow:var(--shadow)}
+  .btn:active{transform:scale(.98)}
+  .btn.primary{background:linear-gradient(135deg,var(--brand2),var(--brand));color:#fff;border-color:transparent;
+    box-shadow:0 6px 18px rgba(58,109,240,.32)}
+  .reminder{margin:16px 24px 0;padding:13px 18px;border-radius:14px;
+    background:linear-gradient(90deg,#fff6e9,#ffe9d2);border:1px solid #f3c98b;
+    display:none;align-items:flex-start;gap:12px;box-shadow:var(--shadow)}
+  .reminder.show{display:flex;animation:pulse 2.4s infinite}
+  .reminder .ic{flex-shrink:0;width:22px;height:22px;stroke:var(--amber);fill:none;stroke-width:1.8}
+  .reminder .txt{flex:1;font-size:13.5px;line-height:1.6}.reminder .txt b{color:var(--amber)}
+  .reminder .close{cursor:pointer;color:var(--sub);width:20px;height:20px;stroke:currentColor;fill:none;
+    stroke-width:2;flex-shrink:0}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(230,144,43,.45)}70%{box-shadow:0 0 0 10px rgba(230,144,43,0)}100%{box-shadow:0 0 0 0 rgba(230,144,43,0)}}
+  .content{padding:20px 24px;overflow:auto;flex:1}
+  .quick{padding:14px 16px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    margin-bottom:18px;display:flex;gap:10px;flex-wrap:wrap;box-shadow:var(--shadow);position:relative}
+  .quick::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:4px;border-radius:4px;
+    background:linear-gradient(180deg,var(--brand2),var(--brand))}
+  .quick input,.quick select{border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-size:13px;
+    color:var(--ink);background:var(--panel2)}
+  .quick input.title{flex:1;min-width:180px}
+  .quick .mini{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--sub);user-select:none}
+  .list{display:flex;flex-direction:column;gap:11px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px 17px;
+    display:flex;align-items:flex-start;gap:13px;box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s}
+  .card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+  .card .chk{width:21px;height:21px;border:2px solid var(--line);border-radius:7px;cursor:pointer;flex-shrink:0;
+    margin-top:2px;display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s}
+  .card .chk svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:3;opacity:0}
   .card.done .chk{background:var(--green);border-color:var(--green)}
+  .card.done .chk svg{opacity:1}
+  .card.overdue{border-color:#f6c9c9;background:#fff8f8}
   .card.done .body .t{text-decoration:line-through;color:var(--sub)}
   .card .body{flex:1;min-width:0}
-  .card .body .t{font-weight:600;font-size:14px;word-break:break-word}
-  .card .body .meta{font-size:12px;color:var(--sub);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-  .tag{font-size:11px;padding:1px 8px;border-radius:9px;font-weight:600}
-  .tag.work{background:#eaf1ff;color:var(--brand)}.tag.outing{background:#e6f7ee;color:var(--green)}.tag.temp{background:#fdeaea;color:var(--red)}.tag.key{background:#fff1e0;color:var(--amber)}.tag.roll{background:#efe7ff;color:#7b4ddb}
-  .card .ops{display:flex;gap:6px;flex-shrink:0}
-  .card .ops button{border:none;background:transparent;cursor:pointer;color:var(--sub);font-size:13px;padding:3px 6px;border-radius:6px}
-  .card .ops button:hover{background:var(--bg)}
-  .empty{text-align:center;color:var(--sub);padding:50px 0;font-size:14px}
-  .stat{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
-  .stat .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;flex:1;min-width:110px;box-shadow:var(--shadow)}
-  .stat .box .n{font-size:22px;font-weight:800}.stat .box .l{font-size:12px;color:var(--sub);margin-top:2px}
-  .section-title{font-size:13px;color:var(--sub);font-weight:700;margin:6px 0 12px;letter-spacing:.5px}
-  .archive-item{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:12px;box-shadow:var(--shadow)}
-  .archive-item .ah{display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:700}
+  .card .body .t{font-weight:600;font-size:14.5px;word-break:break-word;line-height:1.45}
+  .card .body .meta{font-size:12px;color:var(--sub);margin-top:7px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  .card .body .meta .mi{display:inline-flex;align-items:center;gap:4px}
+  .card .body .meta .mi svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.7}
+  .tag{font-size:11px;padding:2px 9px;border-radius:10px;font-weight:600;display:inline-flex;align-items:center}
+  .tag.work{background:#eaf1ff;color:var(--brand)}.tag.outing{background:#e6f7ee;color:var(--green)}
+  .tag.temp{background:#fdeaea;color:var(--red)}.tag.key{background:#fff1e0;color:var(--amber)}
+  .tag.roll{background:#efe7ff;color:#7b4ddb}
+  .card .ops{display:flex;gap:4px;flex-shrink:0}
+  .card .ops button{border:none;background:transparent;cursor:pointer;color:var(--sub);font-size:12.5px;
+    padding:5px 9px;border-radius:8px;transition:background .15s,color .15s}
+  .card .ops button:hover{background:var(--bg1);color:var(--ink)}
+  .empty{text-align:center;color:var(--sub);padding:40px 0;font-size:14px}
+  .empty svg{width:88px;height:88px;stroke:#c4ccdb;fill:none;stroke-width:1.5;margin-bottom:14px;opacity:.8}
+  .today-note{font-size:12.5px;color:var(--green);background:var(--brand-soft);border:1px solid #d6e3ff;
+    padding:9px 14px;border-radius:11px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .today-note svg{width:16px;height:16px;stroke:var(--green);fill:none;stroke-width:2;flex-shrink:0}
+  .stat{display:flex;gap:13px;margin-bottom:18px;flex-wrap:wrap}
+  .stat .box{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px 18px;
+    flex:1;min-width:115px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+  .stat .box::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--brand)}
+  .stat .box.b-green::after{background:var(--green)}.stat .box.b-amber::after{background:var(--amber)}
+  .stat .box.b-ink::after{background:var(--ink)}
+  .stat .box .n{font-size:23px;font-weight:800}.stat .box .l{font-size:12px;color:var(--sub);margin-top:3px}
+  .section-title{font-size:13px;color:var(--sub);font-weight:700;margin:4px 0 13px;letter-spacing:.6px}
+  .archive-item{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:13px 17px;
+    margin-bottom:12px;box-shadow:var(--shadow)}
+  .archive-item .ah{display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:700;color:var(--ink)}
+  .archive-item .ah .ai{width:18px;height:18px;stroke:var(--brand);fill:none;stroke-width:1.8;flex-shrink:0}
   .archive-item .ah .cnt{font-size:12px;color:var(--sub);font-weight:500}
-  .archive-item .ah .arrow{margin-left:auto;transition:transform .2s;color:var(--sub)}
+  .archive-item .ah .arrow{margin-left:auto;transition:transform .2s;color:var(--sub);width:16px;height:16px;
+    stroke:currentColor;fill:none;stroke-width:2}
   .archive-item.open .ah .arrow{transform:rotate(90deg)}
   .archive-item .abody{display:none;margin-top:10px}.archive-item.open .abody{display:block}
-  .mini-card{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-top:1px dashed var(--line);font-size:13px}
-  .mini-card .st{width:16px;height:16px;border-radius:4px;flex-shrink:0;margin-top:2px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px}
-  .mini-card.done .st{background:var(--green);border-color:var(--green);color:#fff}
+  .mini-card{display:flex;align-items:flex-start;gap:8px;padding:9px 0;border-top:1px dashed var(--line);font-size:13px}
+  .mini-card .st{width:17px;height:17px;border-radius:5px;flex-shrink:0;margin-top:2px;border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;font-size:11px}
+  .mini-card .st svg{width:11px;height:11px;stroke:#fff;fill:none;stroke-width:3;opacity:0}
+  .mini-card.done .st{background:var(--green);border-color:var(--green)}
+  .mini-card.done .st svg{opacity:1}
   .mini-card.done .tt{text-decoration:line-through;color:var(--sub)}
-  .week-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .week-grid{display:grid;grid-template-columns:repeat(7,minmax(150px,1fr));gap:10px;min-width:1080px}
-  .day-col{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:var(--shadow);min-height:200px}
+  .week-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}
+  .week-grid{display:grid;grid-template-columns:repeat(7,minmax(152px,1fr));gap:11px;min-width:1080px}
+  .day-col{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:11px;
+    box-shadow:var(--shadow);min-height:210px}
   .day-col.today{border:2px solid var(--brand);background:var(--brand-soft)}
-  .day-col .dh{font-weight:700;font-size:13px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .day-col .dh{font-weight:700;font-size:13px;margin-bottom:9px;display:flex;align-items:center;gap:6px}
   .day-col .dh .dnum{color:var(--sub);font-weight:500}
-  .day-col .dh .badge{margin-left:auto;font-size:10px;background:var(--brand);color:#fff;padding:1px 6px;border-radius:8px}
-  .day-col .ev{font-size:12px;padding:5px 7px;margin-bottom:6px;border-radius:7px;background:var(--bg);border-left:3px solid var(--brand)}
+  .day-col .dh .badge{margin-left:auto;font-size:10px;background:var(--brand);color:#fff;padding:2px 7px;border-radius:9px}
+  .day-col .ev{font-size:12px;padding:6px 8px;margin-bottom:6px;border-radius:8px;background:var(--panel2);
+    border-left:3px solid var(--brand)}
   .day-col .ev.outing{border-left-color:var(--green)}.day-col .ev.temp{border-left-color:var(--red)}
   .day-col .ev.done{opacity:.55;text-decoration:line-through}
   .day-col .ev .et{font-weight:600}.day-col .ev .ek{font-size:10px;color:var(--amber);font-weight:700}
   .day-col .more{font-size:11px;color:var(--sub);text-align:center;margin-top:4px}
   .note-line{font-size:11px;color:var(--sub);margin-top:2px}
-  .modal-bg{position:fixed;inset:0;background:rgba(20,30,50,.35);display:none;align-items:center;justify-content:center;z-index:60}
-  .modal-bg.show{display:flex}
-  .modal{background:#fff;border-radius:14px;padding:22px;width:440px;max-width:92vw;box-shadow:0 12px 40px rgba(0,0,0,.2);max-height:90vh;overflow:auto}
-  .modal h3{font-size:16px;margin-bottom:14px}
-  .modal label{display:block;font-size:12px;color:var(--sub);margin:10px 0 4px}
-  .modal input,.modal select,.modal textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit}
-  .modal .row{display:flex;gap:10px}.modal .row>div{flex:1}
-  .modal .foot{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
-  .modal .hint{font-size:11px;color:var(--sub);margin-top:10px;line-height:1.6}
-  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1f2733;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;opacity:0;transition:.25s;z-index:99;max-width:90vw}
-  .toast.show{opacity:1}
-  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:40;display:none}.overlay.show{display:block}
-  .today-top{display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
-  .ring-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 20px;box-shadow:var(--shadow);animation:fadeUp .5s both}
-  .ring-wrap{position:relative;width:120px;height:120px;flex-shrink:0}
+  /* All tasks view */
+  .all-bar{display:none;margin-bottom:16px}
+  .all-bar.show{display:block;animation:fadeUp .4s both}
+  .all-search{display:flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--line);
+    border-radius:12px;padding:10px 14px;box-shadow:var(--shadow);margin-bottom:12px}
+  .all-search svg{width:18px;height:18px;stroke:var(--sub);fill:none;stroke-width:1.8;flex-shrink:0}
+  .all-search input{border:none;outline:none;flex:1;font-size:13.5px;color:var(--ink);background:transparent}
+  .pills{display:flex;gap:8px;flex-wrap:wrap}
+  .pill{padding:7px 15px;border-radius:20px;border:1px solid var(--line);background:var(--panel);
+    font-size:12.5px;font-weight:600;color:var(--sub);cursor:pointer;transition:all .15s;user-select:none}
+  .pill:hover{border-color:var(--brand2);color:var(--brand)}
+  .pill.active{background:linear-gradient(135deg,var(--brand2),var(--brand));color:#fff;border-color:transparent;
+    box-shadow:0 4px 12px rgba(58,109,240,.3)}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .today-top{display:flex;gap:18px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+  .ring-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 22px;
+    box-shadow:var(--shadow);animation:fadeUp .5s both}
+  .ring-wrap{position:relative;width:128px;height:128px;flex-shrink:0}
   .ring-wrap svg{transform:rotate(-90deg);display:block}
   .ring-bg{fill:none;stroke:var(--line);stroke-width:11}
-  .ring-fg{fill:none;stroke:var(--brand);stroke-width:11;stroke-linecap:round;transition:stroke-dashoffset 1s cubic-bezier(.4,0,.2,1)}
-  .ring-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
-  .ring-center{font-size:27px;font-weight:800;color:var(--ink)}
+  .ring-fg{fill:none;stroke:var(--brand);stroke-width:11;stroke-linecap:round;
+    transition:stroke-dashoffset 1s cubic-bezier(.4,0,.2,1)}
+  .ring-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    pointer-events:none}
+  .ring-center{font-size:29px;font-weight:800;color:var(--ink)}
   .ring-label{font-size:12px;color:var(--sub);margin-top:1px}
-  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .modal-bg{position:fixed;inset:0;background:rgba(20,30,50,.4);display:none;align-items:center;justify-content:center;
+    z-index:60;backdrop-filter:blur(3px)}
+  .modal-bg.show{display:flex}
+  .modal{background:#fff;border-radius:18px;padding:24px;width:440px;max-width:92vw;box-shadow:var(--shadow-lg);
+    max-height:90vh;overflow:auto;animation:fadeUp .3s both}
+  .modal h3{font-size:17px;margin-bottom:16px;font-weight:800}
+  .modal label{display:block;font-size:12px;color:var(--sub);margin:11px 0 5px}
+  .modal input,.modal select,.modal textarea{width:100%;border:1px solid var(--line);border-radius:9px;
+    padding:10px 12px;font-size:13px;font-family:inherit;background:var(--panel2);outline:none;transition:border .15s}
+  .modal input:focus,.modal select:focus,.modal textarea:focus{border-color:var(--brand2)}
+  .modal .row{display:flex;gap:10px}.modal .row>div{flex:1}
+  .modal .foot{display:flex;gap:9px;justify-content:flex-end;margin-top:20px}
+  .modal .hint{font-size:11px;color:var(--sub);margin-top:12px;line-height:1.7}
+  .modal code{background:var(--bg1);padding:1px 5px;border-radius:4px;font-size:11px}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:#1c2433;color:#fff;
+    padding:11px 19px;border-radius:11px;font-size:13px;opacity:0;transition:.25s;z-index:99;max-width:90vw;
+    box-shadow:var(--shadow-lg)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .overlay{position:fixed;inset:0;background:rgba(10,16,35,.45);z-index:40;display:none;backdrop-filter:blur(2px)}
+  .overlay.show{display:block}
   @media (max-width:768px){
     body{font-size:15px}
-    .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:50;transform:translateX(-100%);box-shadow:0 0 40px rgba(0,0,0,.2)}
+    .sidebar{position:fixed;left:0;top:0;bottom:0;width:248px;transform:translateX(-100%);box-shadow:0 0 50px rgba(0,0,0,.3)}
     .sidebar.open{transform:translateX(0)}
     .menu-btn{display:block}
-    .topbar{padding:12px 14px;gap:10px}
+    .topbar{padding:13px 15px;gap:10px}
     .topbar h2{font-size:16px}
     .topbar .actions{width:100%;margin-left:0}
-    .topbar .actions .btn{flex:1;padding:9px 8px;text-align:center}
-    .content{padding:14px}
-    .reminder{margin:12px 14px 0}
+    .topbar .actions .btn{flex:1;padding:10px 8px;text-align:center}
+    .content{padding:15px}
+    .reminder{margin:13px 15px 0}
     .quick{flex-direction:column}.quick input.title{width:100%}.quick .row{display:flex;gap:10px;flex-wrap:wrap}
-    .week-grid{grid-template-columns:repeat(7,minmax(140px,1fr))}
-    .card .ops button{padding:6px 10px}
+    .week-grid{grid-template-columns:repeat(7,minmax(142px,1fr))}
+    .card .ops button{padding:7px 11px}
+    .today-top{gap:14px}
   }
 </style>
 </head>
 <body>
   <div class="overlay" id="overlay"></div>
   <aside class="sidebar" id="sidebar">
-    <div class="brand"><h1>今日工作台</h1><p>Tim · 任务与提醒中心</p></div>
+    <div class="brand">
+      <div class="logo"><svg viewBox="0 0 24 24"><path d="M4 13h6v7H4zM14 4h6v16h-6zM9 4h6v9H9z"/></svg></div>
+      <div><h1>今日工作台</h1><p>Tim · 任务与提醒中心</p></div>
+    </div>
     <nav class="nav" id="nav">
-      <div class="nav-item active" data-view="today"><span class="dot"></span>今日总览<span class="count" id="c-today">0</span></div>
-      <div class="nav-item" data-view="work"><span class="dot"></span>工作任务<span class="count" id="c-work">0</span></div>
-      <div class="nav-item" data-view="outing"><span class="dot"></span>外出任务<span class="count" id="c-outing">0</span></div>
-      <div class="nav-item" data-view="time"><span class="dot"></span>任务时间<span class="count" id="c-time">0</span></div>
-      <div class="nav-item" data-view="key"><span class="dot"></span>重点任务<span class="count" id="c-key">0</span></div>
-      <div class="nav-item" data-view="temp"><span class="dot"></span>临时任务及变化<span class="count" id="c-temp">0</span></div>
-      <div class="nav-item" data-view="week"><span class="dot"></span>工作周视图</div>
-      <div class="nav-item" data-view="archive"><span class="dot"></span>历史归档</div>
+      <div class="nav-item active" data-view="today">
+        <svg class="ni" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>今日总览<span class="count" id="c-today">0</span></div>
+      <div class="nav-item" data-view="all">
+        <svg class="ni" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>全部任务<span class="count" id="c-all">0</span></div>
+      <div class="nav-group">分类视图</div>
+      <div class="nav-item" data-view="work">
+        <svg class="ni" viewBox="0 0 24 24"><path d="M3 8h18v11H3zM8 8V6a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>工作任务<span class="count" id="c-work">0</span></div>
+      <div class="nav-item" data-view="outing">
+        <svg class="ni" viewBox="0 0 24 24"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>外出任务<span class="count" id="c-outing">0</span></div>
+      <div class="nav-item" data-view="time">
+        <svg class="ni" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>任务时间<span class="count" id="c-time">0</span></div>
+      <div class="nav-item" data-view="key">
+        <svg class="ni" viewBox="0 0 24 24"><path d="M12 3l2.7 5.5 6 .9-4.3 4.2 1 6-5.4-2.8L6.6 19.6l1-6L3.3 9.4l6-.9z"/></svg>重点任务<span class="count" id="c-key">0</span></div>
+      <div class="nav-item" data-view="temp">
+        <svg class="ni" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg>临时任务及变化<span class="count" id="c-temp">0</span></div>
+      <div class="nav-group">周期与归档</div>
+      <div class="nav-item" data-view="week">
+        <svg class="ni" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>工作周视图</div>
+      <div class="nav-item" data-view="archive">
+        <svg class="ni" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4"/><path d="M5 8v11h14V8M9 12h6"/></svg>历史归档</div>
     </nav>
     <div class="workcfg">
-      <div>上班时间提醒</div>
+      <div class="wt-title"><svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>上班时间提醒</div>
       <div class="row">起 <input type="time" id="workStart" value="09:00"> 止 <input type="time" id="workEnd" value="18:00"></div>
-      <div style="margin-top:6px"><label style="font-size:11px"><input type="checkbox" id="autoRoll" checked> 未完成自动顺延次日</label></div>
+      <label class="chk"><input type="checkbox" id="autoRoll" checked> 未完成自动顺延次日</label>
       <button id="enableNotify">开启浏览器通知</button>
       <button class="syncbtn" id="syncBtn">同步设置</button>
     </div>
@@ -175,9 +288,9 @@
     </div>
 
     <div class="reminder" id="reminder">
-      <div class="ic">🔔</div>
+      <svg class="ic" viewBox="0 0 24 24"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></svg>
       <div class="txt" id="reminderTxt"></div>
-      <div class="close" id="reminderClose">✕</div>
+      <svg class="close" id="reminderClose" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </div>
 
     <div class="content">
@@ -189,6 +302,20 @@
         <button class="btn primary" id="qAdd">添加</button>
       </div>
       <div id="statsArea"></div>
+      <div class="all-bar" id="allBar">
+        <div class="all-search">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+          <input id="allSearch" placeholder="搜索任务标题或备注…">
+        </div>
+        <div class="pills" id="allPills">
+          <span class="pill active" data-f="all">全部</span>
+          <span class="pill" data-f="work">工作</span>
+          <span class="pill" data-f="outing">外出</span>
+          <span class="pill" data-f="temp">临时</span>
+          <span class="pill" data-f="key">重点</span>
+          <span class="pill" data-f="done">已完成</span>
+        </div>
+      </div>
       <div class="section-title" id="listTitle">所有任务</div>
       <div id="listArea"></div>
     </div>
@@ -231,7 +358,7 @@
   var KEY="tim_workbench_tasks_v1", ARK="tim_workbench_archive_v1", WK="tim_workbench_config_v1", SYK="tim_wb_sync_v1";
   var tasks=load(KEY,[]), archive=load(ARK,{}), cfg=load(WK,{start:"09:00",end:"18:00",autoRoll:true});
   var syncCfg=load(SYK,null);
-  var view="today", syncing=false, syncTimer=null, lastRingPct=-1;
+  var view="today", syncing=false, syncTimer=null, lastRingPct=-1, allFilter="all";
   var TYPE_LABEL={work:"工作任务",outing:"外出任务",temp:"临时任务"};
 
   function load(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
@@ -264,7 +391,7 @@
   }
 
   function counts(){
-    return {today:tasks.length,work:tasks.filter(function(t){return t.type==="work";}).length,
+    return {today:tasks.length,all:tasks.length,work:tasks.filter(function(t){return t.type==="work";}).length,
       outing:tasks.filter(function(t){return t.type==="outing";}).length,
       time:tasks.filter(function(t){return t.time;}).length,
       key:tasks.filter(function(t){return t.key;}).length,
@@ -342,58 +469,105 @@
 
   function render(){
     var c=counts();
-    ["today","work","outing","time","key","temp"].forEach(function(k){document.getElementById("c-"+k).textContent=c[k];});
-    var titles={today:"今日总览",work:"工作任务",outing:"外出任务",time:"任务时间（按时间排序）",key:"重点任务",temp:"临时任务及变化",week:"工作周视图",archive:"历史归档"};
+    ["today","all","work","outing","time","key","temp"].forEach(function(k){var el=document.getElementById("c-"+k);if(el)el.textContent=c[k];});
+    var titles={today:"今日总览",all:"全部任务",work:"工作任务",outing:"外出任务",time:"任务时间（按时间排序）",key:"重点任务",temp:"临时任务及变化",week:"工作周视图",archive:"历史归档"};
     document.getElementById("viewTitle").textContent=titles[view];
     var area=document.getElementById("listArea");var statsArea=document.getElementById("statsArea");
-    document.getElementById("listTitle").style.display=(view==="week"||view==="archive")?"none":"block";
+    var allBar=document.getElementById("allBar");var listTitle=document.getElementById("listTitle");
+    listTitle.style.display=(view==="week"||view==="archive")?"none":"block";
+    allBar.classList.toggle("show", view==="all");
     if(view==="today"){
       var done=tasks.filter(function(t){return t.done;}).length, keyUndone=tasks.filter(function(t){return t.key&&!t.done;}).length;
       var total=tasks.length;
       statsArea.innerHTML='<div class="today-top">'+
         '<div class="ring-card"><div class="ring-wrap">'+
-          '<svg viewBox="0 0 120 120" width="120" height="120"><circle class="ring-bg" cx="60" cy="60" r="52"></circle><circle class="ring-fg" id="ringFg" cx="60" cy="60" r="52"></circle></svg>'+
+          '<svg viewBox="0 0 120 120" width="128" height="128"><circle class="ring-bg" cx="60" cy="60" r="52"></circle><circle class="ring-fg" id="ringFg" cx="60" cy="60" r="52"></circle></svg>'+
           '<div class="ring-text"><div class="ring-center" id="ringPct">0%</div><div class="ring-label">今日完成</div></div>'+
         '</div></div>'+
         '<div class="stat">'+
           '<div class="box"><div class="n">'+total+'</div><div class="l">今日总任务</div></div>'+
-          '<div class="box"><div class="n" style="color:var(--green)">'+done+'</div><div class="l">已完成</div></div>'+
-          '<div class="box"><div class="n" style="color:var(--amber)">'+keyUndone+'</div><div class="l">重点未完成</div></div>'+
-          '<div class="box"><div class="n">'+(total-done)+'</div><div class="l">待办</div></div>'+
+          '<div class="box b-green"><div class="n" style="color:var(--green)">'+done+'</div><div class="l">已完成</div></div>'+
+          '<div class="box b-amber"><div class="n" style="color:var(--amber)">'+keyUndone+'</div><div class="l">重点未完成</div></div>'+
+          '<div class="box b-ink"><div class="n">'+(total-done)+'</div><div class="l">待办</div></div>'+
         '</div></div>';
       renderRing(done,total);
     } else { statsArea.innerHTML=""; }
     if(view==="week"){renderWeek(area);return;}
     if(view==="archive"){renderArchive(area);return;}
+    if(view==="all"){ listTitle.textContent="全部任务（"+tasks.length+"）"; renderAll(area); return; }
+    // today / category views
+    if(view==="today") listTitle.textContent="今天要处理";
+    else listTitle.textContent="所有任务";
     var data=filtered();
-    if(!data.length){area.innerHTML='<div class="empty">暂无任务，用上方输入框快速添加，或点右上角「新建任务」。</div>';return;}
+    if(!data.length){
+      if(view==="today"){
+        if(tasks.length) area.innerHTML='<div class="empty" style="padding:30px 0"><svg viewBox="0 0 24 24" width="70" height="70"><path d="M4 12l5 5L20 6"/></svg><div>今日任务已全部完成，辛苦了</div></div>';
+        else area.innerHTML='<div class="empty">暂无任务，用上方输入框快速添加，或点右上角「新建任务」。</div>';
+      } else {
+        area.innerHTML='<div class="empty">该分类下暂无任务。</div>';
+      }
+      return;
+    }
     var list=document.createElement("div");list.className="list";
     data.forEach(function(t){list.appendChild(cardEl(t));});
     area.innerHTML="";area.appendChild(list);
   }
 
   function cardEl(t){
-    var div=document.createElement("div");div.className="card"+(t.done?" done":"");
+    var div=document.createElement("div");
+    div.className="card"+(t.done?" done":"")+((!t.done&&(t.roll||(t.date&&t.date<todayStr())))?" overdue":"");
     var tagHtml='<span class="tag '+t.type+'">'+TYPE_LABEL[t.type]+'</span>';
     if(t.key) tagHtml+=' <span class="tag key">重点</span>';
     if(t.roll) tagHtml+=' <span class="tag roll">顺延</span>';
     var meta='<div class="meta">'+tagHtml;
-    if(t.time) meta+=' <span>🕒 '+t.time+'</span>';
-    if(t.note) meta+=' <span>📝 '+escapeHtml(t.note)+'</span>';
+    if(t.time) meta+=' <span class="mi"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'+t.time+'</span>';
+    if(t.note) meta+=' <span class="mi"><svg viewBox="0 0 24 24"><path d="M5 4h14v10l-5 5H5z"/><path d="M14 19v-5h5"/></svg>'+escapeHtml(t.note)+'</span>';
     meta+='</div>';
-    div.innerHTML='<div class="chk" data-act="toggle" data-id="'+t.id+'">'+(t.done?"✓":"")+'</div>'+
+    div.innerHTML='<div class="chk" data-act="toggle" data-id="'+t.id+'"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 6"/></svg></div>'+
       '<div class="body"><div class="t">'+escapeHtml(t.title)+'</div>'+meta+'</div>'+
       '<div class="ops"><button data-act="edit" data-id="'+t.id+'">编辑</button><button data-act="del" data-id="'+t.id+'">删除</button></div>';
     return div;
   }
   function filtered(){
-    if(view==="today") return tasks.slice();
+    if(view==="today") return tasks.filter(function(t){return !t.done;})
+      .slice().sort(function(a,b){
+        var oa=(a.roll||(a.date&&a.date<todayStr()))?0:1, ob=(b.roll||(b.date&&b.date<todayStr()))?0:1;
+        if(oa!==ob) return oa-ob;
+        var ta=a.time||"99",tb=b.time||"99";return ta<tb?-1:1;
+      });
     if(view==="work") return tasks.filter(function(t){return t.type==="work";});
     if(view==="outing") return tasks.filter(function(t){return t.type==="outing";});
     if(view==="key") return tasks.filter(function(t){return t.key;});
     if(view==="temp") return tasks.filter(function(t){return t.type==="temp";});
     if(view==="time") return tasks.filter(function(t){return t.time;}).slice().sort(function(a,b){return a.time<b.time?-1:1;});
     return tasks.slice();
+  }
+
+  function renderAll(area){
+    var q=document.getElementById("allSearch").value.trim().toLowerCase();
+    var f=allFilter;
+    var data=tasks.filter(function(t){
+      if(f==="work"&&t.type!=="work")return false;
+      if(f==="outing"&&t.type!=="outing")return false;
+      if(f==="temp"&&t.type!=="temp")return false;
+      if(f==="key"&&!t.key)return false;
+      if(f==="done"&&!t.done)return false;
+      if(q){ if((t.title+""+(t.note||"")).toLowerCase().indexOf(q)<0)return false; }
+      return true;
+    });
+    data.sort(function(a,b){
+      if(a.done!==b.done) return a.done?1:-1;
+      var oa=(a.roll||(a.date&&a.date<todayStr()))?0:1, ob=(b.roll||(b.date&&b.date<todayStr()))?0:1;
+      if(oa!==ob) return oa-ob;
+      var ta=a.time||"99",tb=b.time||"99";return ta<tb?-1:1;
+    });
+    if(!data.length){
+      area.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/><path d="M8 13h8M8 17h5"/></svg><div>'+(q||f!=="all"?"没有匹配的任务":"还没有任何任务，先添加一个吧")+'</div></div>';
+      return;
+    }
+    var list=document.createElement("div");list.className="list";
+    data.forEach(function(t){list.appendChild(cardEl(t));});
+    area.innerHTML="";area.appendChild(list);
   }
 
   function renderWeek(area){
@@ -426,11 +600,11 @@
     keys.forEach(function(k){
       var arr=archive[k]||[];var done=arr.filter(function(t){return t.done;}).length;
       var item=document.createElement("div");item.className="archive-item";
-      item.innerHTML='<div class="ah"><span>📅 '+k+'</span><span class="cnt">共 '+arr.length+' 项 · 完成 '+done+'</span><span class="arrow">▶</span></div><div class="abody"></div>';
+      item.innerHTML='<div class="ah"><svg class="ai" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4"/><path d="M5 8v11h14V8"/></svg><span>'+k+'</span><span class="cnt">共 '+arr.length+' 项 · 完成 '+done+'</span><svg class="arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div><div class="abody"></div>';
       var body=item.querySelector(".abody");
       arr.slice().sort(function(a,b){return (a.time||"99")<(b.time||"99")?-1:1;}).forEach(function(t){
         var mc=document.createElement("div");mc.className="mini-card"+(t.done?" done":"");
-        mc.innerHTML='<div class="st">'+(t.done?"✓":"")+'</div><div><div class="tt">'+escapeHtml(t.title)+'</div>'+
+        mc.innerHTML='<div class="st"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 6"/></svg></div><div><div class="tt">'+escapeHtml(t.title)+'</div>'+
           '<div class="note-line">'+TYPE_LABEL[t.type]+(t.key?' · 重点':'')+(t.note?' · '+escapeHtml(t.note):'')+'</div></div>';
         body.appendChild(mc);
       });
@@ -452,6 +626,13 @@
     else if(act==="del"){if(confirm("确定删除该任务？")){tasks=tasks.filter(function(x){return x.id!==id;});save();render();toast("已删除");}}
     else if(act==="edit"){openModal(id);}
   });
+  document.getElementById("allPills").addEventListener("click",function(e){
+    var p=e.target.closest(".pill");if(!p)return;
+    document.querySelectorAll(".pill").forEach(function(x){x.classList.remove("active");});
+    p.classList.add("active");allFilter=p.getAttribute("data-f");render();
+  });
+  document.getElementById("allSearch").addEventListener("input",function(){ if(view==="all") renderAll(document.getElementById("listArea")); });
+
   function doQuick(){
     var title=document.getElementById("qTitle").value.trim();
     if(!title){toast("请输入任务内容");return;}
