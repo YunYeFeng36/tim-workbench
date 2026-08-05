@@ -21,6 +21,17 @@
   .nav-item.active .dot{background:#fff}
   .nav-item .count{margin-left:auto;font-size:12px;background:rgba(0,0,0,.08);padding:1px 8px;border-radius:10px}
   .nav-item.active .count{background:rgba(255,255,255,.25)}
+  .nav-item{position:relative;transition:background .2s,color .2s,transform .15s}
+  .nav-item:hover{transform:translateX(3px)}
+  .nav-item:active{transform:scale(.97)}
+  .nav-item::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%) scaleY(0);width:4px;height:58%;background:rgba(255,255,255,.92);border-radius:0 4px 4px 0;transition:transform .25s}
+  .nav-item.active::before{transform:translateY(-50%) scaleY(1)}
+  .nav-item .dot{transition:transform .3s}
+  .nav-item.active .dot{animation:dotPulse 1.8s ease-in-out infinite}
+  @keyframes dotPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.45);opacity:.65}}
+  .nav-item{animation:navIn .42s ease backwards}
+  .nav-item:nth-child(1){animation-delay:.03s}.nav-item:nth-child(2){animation-delay:.07s}.nav-item:nth-child(3){animation-delay:.11s}.nav-item:nth-child(4){animation-delay:.15s}.nav-item:nth-child(5){animation-delay:.19s}.nav-item:nth-child(6){animation-delay:.23s}.nav-item:nth-child(7){animation-delay:.27s}.nav-item:nth-child(8){animation-delay:.31s}
+  @keyframes navIn{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:translateX(0)}}
   .workcfg{padding:12px 14px;border-top:1px solid var(--line);font-size:12px;color:var(--sub)}
   .workcfg input{width:62px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;font-size:12px;color:var(--ink)}
   .workcfg .row{display:flex;align-items:center;gap:6px;margin-top:6px}
@@ -97,6 +108,16 @@
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1f2733;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;opacity:0;transition:.25s;z-index:99;max-width:90vw}
   .toast.show{opacity:1}
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:40;display:none}.overlay.show{display:block}
+  .today-top{display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+  .ring-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 20px;box-shadow:var(--shadow);animation:fadeUp .5s both}
+  .ring-wrap{position:relative;width:120px;height:120px;flex-shrink:0}
+  .ring-wrap svg{transform:rotate(-90deg);display:block}
+  .ring-bg{fill:none;stroke:var(--line);stroke-width:11}
+  .ring-fg{fill:none;stroke:var(--brand);stroke-width:11;stroke-linecap:round;transition:stroke-dashoffset 1s cubic-bezier(.4,0,.2,1)}
+  .ring-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+  .ring-center{font-size:27px;font-weight:800;color:var(--ink)}
+  .ring-label{font-size:12px;color:var(--sub);margin-top:1px}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
   @media (max-width:768px){
     body{font-size:15px}
     .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:50;transform:translateX(-100%);box-shadow:0 0 40px rgba(0,0,0,.2)}
@@ -210,7 +231,7 @@
   var KEY="tim_workbench_tasks_v1", ARK="tim_workbench_archive_v1", WK="tim_workbench_config_v1", SYK="tim_wb_sync_v1";
   var tasks=load(KEY,[]), archive=load(ARK,{}), cfg=load(WK,{start:"09:00",end:"18:00",autoRoll:true});
   var syncCfg=load(SYK,null);
-  var view="today", syncing=false, syncTimer=null;
+  var view="today", syncing=false, syncTimer=null, lastRingPct=-1;
   var TYPE_LABEL={work:"工作任务",outing:"外出任务",temp:"临时任务"};
 
   function load(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
@@ -248,6 +269,24 @@
       time:tasks.filter(function(t){return t.time;}).length,
       key:tasks.filter(function(t){return t.key;}).length,
       temp:tasks.filter(function(t){return t.type==="temp";}).length};
+  }
+  function renderRing(done,total){
+    var fg=document.getElementById("ringFg");if(!fg)return;
+    var C=2*Math.PI*52;
+    var pct=total?Math.round(done/total*100):0;
+    var targetOff=C*(1-pct/100);
+    var color= pct>=70?"var(--green)": pct>=40?"var(--amber)":"var(--red)";
+    fg.style.stroke=color;
+    fg.style.strokeDasharray=C;
+    fg.style.strokeDashoffset=C;
+    var pctEl=document.getElementById("ringPct");if(pctEl)pctEl.textContent=pct+"%";
+    if(pct!==lastRingPct){
+      requestAnimationFrame(function(){ fg.style.strokeDashoffset=targetOff; });
+    }else{
+      fg.style.transition="none";fg.style.strokeDashoffset=targetOff;
+      requestAnimationFrame(function(){ fg.style.transition=""; });
+    }
+    lastRingPct=pct;
   }
 
   // ---- Sync (GitHub Gist) ----
@@ -310,11 +349,19 @@
     document.getElementById("listTitle").style.display=(view==="week"||view==="archive")?"none":"block";
     if(view==="today"){
       var done=tasks.filter(function(t){return t.done;}).length, keyUndone=tasks.filter(function(t){return t.key&&!t.done;}).length;
-      statsArea.innerHTML='<div class="stat">'+
-        '<div class="box"><div class="n">'+tasks.length+'</div><div class="l">今日总任务</div></div>'+
-        '<div class="box"><div class="n" style="color:var(--green)">'+done+'</div><div class="l">已完成</div></div>'+
-        '<div class="box"><div class="n" style="color:var(--amber)">'+keyUndone+'</div><div class="l">重点未完成</div></div>'+
-        '<div class="box"><div class="n">'+(tasks.length-done)+'</div><div class="l">待办</div></div></div>';
+      var total=tasks.length;
+      statsArea.innerHTML='<div class="today-top">'+
+        '<div class="ring-card"><div class="ring-wrap">'+
+          '<svg viewBox="0 0 120 120" width="120" height="120"><circle class="ring-bg" cx="60" cy="60" r="52"></circle><circle class="ring-fg" id="ringFg" cx="60" cy="60" r="52"></circle></svg>'+
+          '<div class="ring-text"><div class="ring-center" id="ringPct">0%</div><div class="ring-label">今日完成</div></div>'+
+        '</div></div>'+
+        '<div class="stat">'+
+          '<div class="box"><div class="n">'+total+'</div><div class="l">今日总任务</div></div>'+
+          '<div class="box"><div class="n" style="color:var(--green)">'+done+'</div><div class="l">已完成</div></div>'+
+          '<div class="box"><div class="n" style="color:var(--amber)">'+keyUndone+'</div><div class="l">重点未完成</div></div>'+
+          '<div class="box"><div class="n">'+(total-done)+'</div><div class="l">待办</div></div>'+
+        '</div></div>';
+      renderRing(done,total);
     } else { statsArea.innerHTML=""; }
     if(view==="week"){renderWeek(area);return;}
     if(view==="archive"){renderArchive(area);return;}
@@ -533,7 +580,7 @@
   render();checkReminder();
   setInterval(function(){dailyArchive();render();checkReminder();},60000);
   setInterval(checkReminder,30000);
-  setInterval(function(){ if(syncCfg&&syncCfg.url) syncCycle(); },15000);
+  setInterval(function(){ if(syncCfg&&syncCfg.token) syncCycle(); },15000);
 })();
 </script>
 </body>
