@@ -213,6 +213,13 @@
     padding:11px 19px;border-radius:11px;font-size:13px;opacity:0;transition:.25s;z-index:99;max-width:90vw;
     box-shadow:var(--shadow-lg)}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .undo-bar{position:fixed;bottom:84px;left:50%;transform:translateX(-50%) translateY(20px);background:#1c2433;color:#fff;padding:12px 14px;border-radius:14px;display:flex;align-items:center;gap:14px;box-shadow:0 12px 30px rgba(15,23,42,.30);opacity:0;pointer-events:none;transition:.28s cubic-bezier(.2,.8,.2,1);z-index:60;font-size:14px;max-width:92vw}
+  .undo-bar.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+  .undo-bar .msg{font-weight:500;white-space:nowrap}
+  .undo-bar .undo-btn{background:var(--brand);color:#fff;border:0;padding:8px 18px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;transition:filter .15s}
+  .undo-bar .undo-btn:hover{filter:brightness(1.1)}
+  .undo-bar .undo-close{background:transparent;border:0;color:rgba(255,255,255,.55);cursor:pointer;padding:4px;display:flex;transition:color .15s}
+  .undo-bar .undo-close:hover{color:#fff}
   .overlay{position:fixed;inset:0;background:rgba(10,16,35,.45);z-index:40;display:none;backdrop-filter:blur(2px)}
   .overlay.show{display:block}
   /* Week 3D pie */
@@ -393,13 +400,20 @@
   </div>
 
   <div class="toast" id="toast"></div>
+  <div class="undo-bar" id="undoBar"><span class="msg" id="undoMsg"></span><button class="undo-btn" id="undoBtn">撤回</button><button class="undo-close" id="undoClose" title="关闭"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M18 6L6 18M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
 
 <script>
 (function(){
   "use strict";
-  var KEY="tim_workbench_tasks_v1", ARK="tim_workbench_archive_v1", WK="tim_workbench_config_v1", SYK="tim_wb_sync_v1";
+  var KEY="tim_workbench_tasks_v1", ARK="tim_workbench_archive_v1", WK="tim_workbench_config_v1", SYK="tim_wb_sync_v1", TRK="tim_workbench_trash_v1";
   var tasks=load(KEY,[]), archive=load(ARK,{}), cfg=load(WK,{start:"09:00",end:"18:00",autoRoll:true});
   var syncCfg=load(SYK,null);
+  var undoStack=load(TRK,[]), undoTimer=null;
+  var trashPending=load(TRK,[]);
+  if(trashPending.length){
+    trashPending.forEach(function(x){ if(!tasks.some(function(t){return t.id===x.task.id;})) tasks.push(x.task); });
+    undoStack=trashPending; localStorage.removeItem(TRK);
+  }
   var view="today", syncing=false, syncTimer=null, lastRingPct=-1, allFilter="all", todayFilter="undone";
   var TYPE_LABEL={work:"工作任务",outing:"外出任务",temp:"临时任务"};
 
@@ -413,6 +427,29 @@
   function saveCfg(){localStorage.setItem(WK,JSON.stringify(cfg));}
   function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
   function toast(m){var t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(function(){t.classList.remove("show");},1800);}
+  function showUndo(){
+    var bar=document.getElementById("undoBar");
+    document.getElementById("undoMsg").textContent="已删除 "+undoStack.length+" 项任务";
+    bar.classList.add("show");
+    if(undoTimer) clearTimeout(undoTimer);
+    undoTimer=setTimeout(hideUndo,6000);
+  }
+  function hideUndo(){
+    if(undoTimer) clearTimeout(undoTimer);
+    undoStack=[]; localStorage.removeItem(TRK);
+    document.getElementById("undoBar").classList.remove("show");
+  }
+  function doUndo(){
+    if(undoTimer) clearTimeout(undoTimer);
+    var n=undoStack.length;
+    for(var i=undoStack.length-1;i>=0;i--){
+      var u=undoStack[i], pos=Math.min(u.idx, tasks.length);
+      tasks.splice(pos,0,u.task);
+    }
+    undoStack=[]; localStorage.removeItem(TRK);
+    document.getElementById("undoBar").classList.remove("show");
+    save(); render(); toast("已恢复 "+n+" 项任务");
+  }
   function todayStr(){var d=new Date();return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());}
   function pad(n){return n<10?"0"+n:""+n;}
   function timeStr(){var d=new Date();return pad(d.getHours())+":"+pad(d.getMinutes());}
@@ -711,6 +748,8 @@
   }
 
   // ---- Events ----
+  document.getElementById("undoBtn").addEventListener("click",doUndo);
+  document.getElementById("undoClose").addEventListener("click",hideUndo);
   document.getElementById("nav").addEventListener("click",function(e){
     var item=e.target.closest(".nav-item");if(!item)return;
     document.querySelectorAll(".nav-item").forEach(function(n){n.classList.remove("active");});
@@ -720,7 +759,14 @@
     var btn=e.target.closest("[data-act]");if(!btn)return;
     var id=btn.getAttribute("data-id");var act=btn.getAttribute("data-act");
     if(act==="toggle"){var t=tasks.find(function(x){return x.id===id;});if(t){t.done=!t.done;t.updatedAt=Date.now();save();render();checkReminder();}}
-    else if(act==="del"){if(confirm("确定删除该任务？")){tasks=tasks.filter(function(x){return x.id!==id;});save();render();toast("已删除");}}
+    else if(act==="del"){
+      var di=tasks.findIndex(function(x){return x.id===id;});
+      if(di<0) return;
+      var removed=tasks.splice(di,1)[0];
+      undoStack.push({task:removed, idx:di});
+      localStorage.setItem(TRK,JSON.stringify(undoStack));
+      save();render();showUndo();
+    }
     else if(act==="edit"){openModal(id);}
   });
   document.getElementById("allPills").addEventListener("click",function(e){
