@@ -267,6 +267,24 @@
     .week-pie{width:190px;height:162px}.week-pie-wrap{padding:16px;gap:18px}
     .today-filters .seg{padding:7px 12px;font-size:12px}
   }
+  .proj-box{margin-top:14px;display:none}
+  .proj-head{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:8px;display:flex;align-items:baseline;gap:8px}
+  .proj-sub{font-size:11px;font-weight:500;color:var(--sub)}
+  .proj-row{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+  .proj-row::-webkit-scrollbar{height:6px}
+  .proj-row::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px}
+  .proj-chip{flex:0 0 auto;min-width:124px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 13px;cursor:pointer;transition:transform .15s,box-shadow .2s,border-color .15s,background .15s}
+  .proj-chip:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+  .proj-chip.active{border-color:var(--brand);background:var(--brand-soft);box-shadow:var(--shadow-brand)}
+  .proj-chip .prow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}
+  .proj-chip .pn{font-size:13px;font-weight:700;color:var(--ink);max-width:128px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .proj-chip .pc{font-size:11px;color:var(--sub);flex-shrink:0}
+  .proj-chip .pbar{height:6px;background:var(--line);border-radius:6px;overflow:hidden}
+  .proj-chip .pfill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--brand2),var(--brand));transition:width .6s cubic-bezier(.4,0,.2,1)}
+  .tag.proj{background:#eef0f4;color:#5a6478}
+  .ep{display:inline-block;font-size:10px;color:var(--brand);background:var(--brand-soft);border-radius:6px;padding:0 5px;margin-right:4px;font-weight:600;vertical-align:middle}
+  .quick input.proj{flex:1;min-width:120px}
+
   @media (max-width:768px){
     body{font-size:15px}
     .sidebar{position:fixed;left:0;top:0;bottom:0;width:248px;transform:translateX(-100%);box-shadow:0 0 50px rgba(0,0,0,.3)}
@@ -351,9 +369,12 @@
         <select id="qType"><option value="work">工作任务</option><option value="outing">外出任务</option><option value="temp">临时任务</option></select>
         <input type="time" id="qTime" title="计划时间">
         <label class="mini"><input type="checkbox" id="qKey"> 重点</label>
+        <input class="proj" id="qProject" list="projList" placeholder="项目(可选)">
         <button class="btn primary icon" id="qAdd"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>添加任务</button>
       </div>
       <div id="statsArea"></div>
+      <div id="projBox" class="proj-box"></div>
+      <datalist id="projList"></datalist>
       <div class="today-filters" id="todayFilters" style="display:none">
         <span class="seg active" data-f="undone">未完成 <span class="badge" id="tf-undone">0</span></span>
         <span class="seg" data-f="all">全部 <span class="badge" id="tf-all">0</span></span>
@@ -386,6 +407,7 @@
       <div class="row"><div><label>分类</label><select id="mType"><option value="work">工作任务</option><option value="outing">外出任务</option><option value="temp">临时任务</option></select></div>
       <div><label>计划时间</label><input type="time" id="mTime"></div></div>
       <label>是否重点任务</label><select id="mKey"><option value="0">否</option><option value="1">是（重点关注）</option></select>
+      <label>所属项目</label><input id="mProject" list="projList" placeholder="如：A客户交付 / 内部复盘（可选）">
       <label>备注 / 临时变化</label><textarea id="mNote" rows="3" placeholder="如有临时变化，在此记录"></textarea>
       <div class="foot"><button class="btn" id="mCancel">取消</button><button class="btn primary" id="mSave">保存</button></div>
     </div>
@@ -422,7 +444,7 @@
     trashPending.forEach(function(x){ if(!tasks.some(function(t){return t.id===x.task.id;})) tasks.push(x.task); });
     undoStack=trashPending; localStorage.removeItem(TRK);
   }
-  var view="today", syncing=false, syncTimer=null, lastRingPct=-1, allFilter="all", todayFilter="undone";
+  var view="today", syncing=false, syncTimer=null, lastRingPct=-1, allFilter="all", todayFilter="undone", projFilter="";
   var TYPE_LABEL={work:"工作任务",outing:"外出任务",temp:"临时任务"};
 
   function load(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
@@ -582,6 +604,7 @@
   }
 
   function render(){
+    refreshProjList();
     var c=counts();
     ["today","all","work","outing","time","key","temp"].forEach(function(k){var el=document.getElementById("c-"+k);if(el)el.textContent=c[k];});
     var titles={today:"今日总览",all:"全部任务",work:"工作任务",outing:"外出任务",time:"任务时间（按时间排序）",key:"重点任务",temp:"临时任务及变化",week:"工作周视图",archive:"历史归档"};
@@ -621,6 +644,7 @@
     if(view==="today") listTitle.textContent = todayFilter==="all"?"今日全部任务": todayFilter==="key"?"今日重点任务":"今天要处理";
     else listTitle.textContent="所有任务";
     var data=filtered();
+    if(view==="today"){ renderProjBox(data); } else { document.getElementById("projBox").style.display="none"; }
     if(!data.length){
       if(view==="today"){
         if(!tasks.length) area.innerHTML='<div class="empty">暂无任务，用上方输入框快速添加，或点右上角「新建任务」。</div>';
@@ -637,12 +661,36 @@
     area.innerHTML="";area.appendChild(list);
   }
 
+  function refreshProjList(){
+    var set={};tasks.forEach(function(t){if(t.project)set[t.project]=1;});
+    var dl=document.getElementById("projList");if(!dl)return;
+    dl.innerHTML=Object.keys(set).map(function(p){return '<option value="'+escapeHtml(p)+'">';}).join("");
+  }
+  function renderProjBox(data){
+    var box=document.getElementById("projBox");
+    var groups={};
+    data.forEach(function(t){var p=t.project||"__uncat__";(groups[p]=groups[p]||{total:0,done:0,undone:0});groups[p].total++;if(t.done)groups[p].done++;else groups[p].undone++;});
+    var names=Object.keys(groups);
+    if(!names.length){box.style.display="none";return;}
+    box.style.display="block";
+    var html='<div class="proj-head">项目分类 <span class="proj-sub">今日 '+data.length+' 项 · 点击按项目筛选</span></div><div class="proj-row">';
+    html+='<div class="proj-chip'+(projFilter===""?" active":"")+'" data-p=""><span class="pn">全部项目</span><span class="pc">'+data.length+'</span></div>';
+    names.forEach(function(p){
+      var g=groups[p];var pct=g.total?Math.round(g.done/g.total*100):0;
+      var label=p==="__uncat__"?"未分类":p;
+      var active=projFilter===p?" active":"";
+      html+='<div class="proj-chip'+active+'" data-p="'+escapeHtml(p)+'"><div class="prow"><span class="pn">'+escapeHtml(label)+'</span><span class="pc">'+g.undone+' 待办</span></div><div class="pbar"><div class="pfill" style="width:'+pct+'%"></div></div></div>';
+    });
+    html+='</div>';
+    box.innerHTML=html;
+  }
   function cardEl(t){
     var div=document.createElement("div");
     div.className="card"+(t.done?" done":"")+((!t.done&&(t.roll||(t.date&&t.date<todayStr())))?" overdue":"");
     var tagHtml='<span class="tag '+t.type+'">'+TYPE_LABEL[t.type]+'</span>';
     if(t.key) tagHtml+=' <span class="tag key">重点</span>';
     if(t.roll) tagHtml+=' <span class="tag roll">顺延</span>';
+    if(t.project) tagHtml+=' <span class="tag proj">'+escapeHtml(t.project)+'</span>';
     var meta='<div class="meta">'+tagHtml;
     if(t.time) meta+=' <span class="mi"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'+t.time+'</span>';
     if(t.note) meta+=' <span class="mi"><svg viewBox="0 0 24 24"><path d="M5 4h14v10l-5 5H5z"/><path d="M14 19v-5h5"/></svg>'+escapeHtml(t.note)+'</span>';
@@ -658,6 +706,8 @@
       if(todayFilter==="all") arr=tasks.slice();
       else if(todayFilter==="key") arr=tasks.filter(function(t){return t.key;});
       else arr=tasks.filter(function(t){return !t.done;});
+      if(projFilter==="__uncat__") arr=arr.filter(function(t){return !t.project;});
+      else if(projFilter) arr=arr.filter(function(t){return t.project===projFilter;});
       return arr.slice().sort(function(a,b){
         var oa=(a.roll||(a.date&&a.date<todayStr()))?0:1, ob=(b.roll||(b.date&&b.date<todayStr()))?0:1;
         if(oa!==ob) return oa-ob;
@@ -713,7 +763,7 @@
       var html='<div class="dh">'+wkNames[i]+' <span class="dnum">'+(d.getMonth()+1)+'/'+d.getDate()+'</span>'+(ds===today?'<span class="badge">今天</span>':'')+'</div>';
       evs.slice(0,6).forEach(function(t){
         html+='<div class="ev '+t.type+(t.done?" done":"")+'">'+(t.time?'<span class="et">'+t.time+'</span> ':'')+
-          '<span class="et">'+escapeHtml(t.title)+'</span>'+(t.key?' <span class="ek">★</span>':'')+(t.roll?' <span class="ek">↻</span>':'')+
+          '<span class="et">'+(t.project?'<span class="ep">#'+escapeHtml(t.project)+'</span>':'')+escapeHtml(t.title)+'</span>'+(t.key?' <span class="ek">★</span>':'')+(t.roll?' <span class="ek">↻</span>':'')+
           (t.note?'<div class="note-line">'+escapeHtml(t.note)+'</div>':'')+'</div>';
       });
       if(evs.length>6) html+='<div class="more">+ '+(evs.length-6)+' 更多</div>';
@@ -788,12 +838,16 @@
     document.querySelectorAll("#todayFilters .seg").forEach(function(x){x.classList.remove("active");});
     s.classList.add("active");todayFilter=s.getAttribute("data-f");render();
   });
+  document.getElementById("projBox").addEventListener("click",function(e){
+    var chip=e.target.closest(".proj-chip");if(!chip)return;
+    projFilter=chip.getAttribute("data-p")||"";render();
+  });
 
   function doQuick(){
     var title=document.getElementById("qTitle").value.trim();
     if(!title){toast("请输入任务内容");return;}
-    tasks.unshift({id:uid(),title:title,type:document.getElementById("qType").value,time:document.getElementById("qTime").value||"",key:document.getElementById("qKey").checked,done:false,note:"",date:todayStr(),updatedAt:Date.now()});
-    save();document.getElementById("qTitle").value="";document.getElementById("qTime").value="";document.getElementById("qKey").checked=false;
+    tasks.unshift({id:uid(),title:title,type:document.getElementById("qType").value,time:document.getElementById("qTime").value||"",key:document.getElementById("qKey").checked,project:document.getElementById("qProject").value.trim(),done:false,note:"",date:todayStr(),updatedAt:Date.now()});
+    save();document.getElementById("qTitle").value="";document.getElementById("qTime").value="";document.getElementById("qProject").value="";document.getElementById("qKey").checked=false;
     render();toast("已添加");checkReminder();
   }
   document.getElementById("qAdd").addEventListener("click",doQuick);
@@ -804,8 +858,8 @@
     editingId=id||null;document.getElementById("modalTitle").textContent=id?"编辑任务":"新建任务";
     if(id){var t=tasks.find(function(x){return x.id===id;});
       document.getElementById("mTitle").value=t.title;document.getElementById("mType").value=t.type;
-      document.getElementById("mTime").value=t.time||"";document.getElementById("mKey").value=t.key?"1":"0";document.getElementById("mNote").value=t.note||"";
-    }else{document.getElementById("mTitle").value="";document.getElementById("mType").value="work";document.getElementById("mTime").value="";document.getElementById("mKey").value="0";document.getElementById("mNote").value="";}
+      document.getElementById("mTime").value=t.time||"";document.getElementById("mKey").value=t.key?"1":"0";document.getElementById("mProject").value=t.project||"";document.getElementById("mNote").value=t.note||"";
+    }else{document.getElementById("mTitle").value="";document.getElementById("mType").value="work";document.getElementById("mTime").value="";document.getElementById("mKey").value="0";document.getElementById("mProject").value="";document.getElementById("mNote").value="";}
     document.getElementById("modalBg").classList.add("show");document.getElementById("mTitle").focus();
   }
   function closeModal(){document.getElementById("modalBg").classList.remove("show");editingId=null;}
@@ -814,7 +868,7 @@
   document.getElementById("mSave").addEventListener("click",function(){
     var title=document.getElementById("mTitle").value.trim();
     if(!title){toast("请填写任务标题");return;}
-    var obj={title:title,type:document.getElementById("mType").value,time:document.getElementById("mTime").value||"",key:document.getElementById("mKey").value==="1",note:document.getElementById("mNote").value.trim()};
+    var obj={title:title,type:document.getElementById("mType").value,time:document.getElementById("mTime").value||"",key:document.getElementById("mKey").value==="1",project:document.getElementById("mProject").value.trim(),note:document.getElementById("mNote").value.trim()};
     if(editingId){var t=tasks.find(function(x){return x.id===editingId;});Object.assign(t,obj);t.updatedAt=Date.now();}else{tasks.unshift(Object.assign({id:uid(),done:false,date:todayStr(),updatedAt:Date.now()},obj));}
     save();closeModal();render();toast("已保存");checkReminder();
   });
