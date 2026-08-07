@@ -306,6 +306,48 @@
     .card .ops button{padding:7px 11px}
     .today-top{gap:14px}
   }
+  /* ---- 版本时光机 ---- */
+  .modal.wide{width:740px;max-width:94vw}
+  .ver-tabs{display:flex;gap:8px;margin:6px 0 12px}
+  .ver-tabs .vt{flex:1;text-align:center;padding:9px 10px;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;
+    background:#f2f5fa;color:var(--sub);border:1px solid transparent;transition:.18s;user-select:none}
+  .ver-tabs .vt.active{background:linear-gradient(135deg,var(--brand),#6f8cff);color:#fff;box-shadow:0 6px 16px rgba(79,109,245,.26)}
+  .ver-list{max-height:52vh;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:2px 4px 2px 0;margin-top:10px}
+  .ver-item{border:1px solid #e6ebf4;border-radius:14px;background:#fff;overflow:hidden;transition:.18s}
+  .ver-item:hover{border-color:#c9d6f5;box-shadow:0 6px 18px rgba(30,50,90,.07)}
+  .ver-head{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer}
+  .ver-when{font-size:13.5px;font-weight:800;color:var(--ink)}
+  .ver-why{font-size:11px;color:var(--sub);margin-top:2px}
+  .ver-tag{font-size:10.5px;padding:3px 8px;border-radius:999px;font-weight:800;letter-spacing:.3px}
+  .ver-tag.local{background:#eef2ff;color:#4f6df5}
+  .ver-tag.cloud{background:#e8f7f0;color:#12996a}
+  .ver-nums{margin-left:auto;display:flex;gap:7px;align-items:center}
+  .ver-pill{font-size:11.5px;font-weight:800;padding:4px 10px;border-radius:999px;background:#f2f5fa;color:var(--sub);white-space:nowrap}
+  .ver-pill.undone{background:#fdecec;color:#d9453c}
+  .ver-arrow{width:15px;height:15px;color:var(--sub);transition:transform .2s;flex:none}
+  .ver-item.open .ver-arrow{transform:rotate(180deg)}
+  .ver-body{display:none;border-top:1px dashed #e9edf5;padding:11px 14px 14px;background:#fbfcfe}
+  .ver-item.open .ver-body{display:block}
+  .vb-title{font-size:11.5px;color:var(--sub);font-weight:800;margin:2px 0 8px;letter-spacing:.4px}
+  .vt-row{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:10px;background:#fff;border:1px solid #edf1f8;margin-bottom:6px}
+  .vt-row .nm{font-size:13px;font-weight:600;color:var(--ink);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .vt-row .meta{font-size:10.5px;color:var(--sub);white-space:nowrap}
+  .vt-row .pick{border:1px solid var(--brand);color:var(--brand);background:#fff;border-radius:9px;padding:6px 11px;font-size:12px;font-weight:800;cursor:pointer;min-height:32px;flex:none}
+  .vt-row .pick:hover{background:var(--brand);color:#fff}
+  .vt-row.exists{opacity:.62}
+  .vt-row.exists .pick{border-color:#cfd8e6;color:#9aa6bb;cursor:default}
+  .vt-row.exists .pick:hover{background:#fff;color:#9aa6bb}
+  .ver-acts{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .ver-acts .btn{font-size:12px;padding:7px 12px}
+  .ver-empty{text-align:center;color:var(--sub);font-size:12.5px;padding:26px 0;line-height:1.9}
+  @media (max-width:640px){
+    .ver-list{max-height:58vh}
+    .ver-head{flex-wrap:wrap}
+    .ver-nums{margin-left:0;width:100%}
+    .vt-row{flex-wrap:wrap}
+    .vt-row .nm{flex:1 1 100%}
+    .vt-row .pick{min-height:40px;padding:9px 15px;margin-left:auto}
+  }
 </style>
 </head>
 <body>
@@ -355,6 +397,7 @@
         <div class="date" id="syncStatus" style="font-size:11px;margin-top:2px"></div>
       </div>
       <div class="actions">
+        <button class="btn icon" id="verBtn" title="版本时光机：找回历史任务"><svg viewBox="0 0 24 24"><path d="M12 8v4.5l3 1.8"/><path d="M3.4 9.5A9 9 0 1 1 3 12"/><path d="M3 4.5v5h5"/></svg>版本</button>
         <button class="btn icon" id="exportBtn"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>导出</button>
         <button class="btn icon" id="importBtn"><svg viewBox="0 0 24 24"><path d="M12 21V9m0 0l-4 4m4-4l4 4M5 3h14"/></svg>导入</button>
         <button class="btn primary icon" id="addBtn"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>新建任务</button>
@@ -435,16 +478,34 @@
     </div>
   </div>
 
+  <!-- Version Time Machine -->
+  <div class="modal-bg" id="verModal">
+    <div class="modal wide">
+      <h3>版本时光机</h3>
+      <div class="ver-tabs">
+        <div class="vt active" data-src="local">本地快照</div>
+        <div class="vt" data-src="cloud">云端历史版本</div>
+      </div>
+      <div class="hint" id="verHint"></div>
+      <div class="ver-list" id="verList"></div>
+      <div class="foot">
+        <button class="btn" id="verSnapNow">立即存一份快照</button>
+        <button class="btn primary" id="verClose">关闭</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
   <div class="undo-bar" id="undoBar"><span class="msg" id="undoMsg"></span><button class="undo-btn" id="undoBtn">撤回</button><button class="undo-close" id="undoClose" title="关闭"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M18 6L6 18M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
 
 <script>
 (function(){
   "use strict";
-  var KEY="tim_workbench_tasks_v1", ARK="tim_workbench_archive_v1", WK="tim_workbench_config_v1", SYK="tim_wb_sync_v1", TRK="tim_workbench_trash_v1";
+  var KEY="tim_workbench_tasks_v1", ARK="tim_workbench_archive_v1", WK="tim_workbench_config_v1", SYK="tim_wb_sync_v1", TRK="tim_workbench_trash_v1", SNK="tim_wb_snaps_v1";
   var tasks=load(KEY,[]), archive=load(ARK,{}), cfg=load(WK,{start:"09:00",end:"18:00",autoRoll:true});
   var syncCfg=load(SYK,null);
   var undoStack=load(TRK,[]), undoTimer=null;
+  var snaps=load(SNK,[]);
   var trashPending=load(TRK,[]);
   if(trashPending.length){
     trashPending.forEach(function(x){ if(!tasks.some(function(t){return t.id===x.task.id;})) tasks.push(x.task); });
@@ -457,6 +518,7 @@
   function save(){
     localStorage.setItem(KEY,JSON.stringify(tasks));
     localStorage.setItem(ARK,JSON.stringify(archive));
+    maybeSnap("自动留档");
     if(!syncing) scheduleSync();
   }
   function saveArchive(){save();}
@@ -496,6 +558,7 @@
   // 设计：未完成的旧任务始终保留在当前列表（标"顺延"），今天可直接调出完成；
   // 已完成的旧任务移入历史归档快照（同份仅归档一次）。修改后必须 save() 持久化。
   function dailyArchive(){
+    try{ takeSnap("每日归档前",true); }catch(e){}
     var today=todayStr();var changed=false;var remaining=[];
     tasks.forEach(function(t){
       if(t.date && t.date<today){
@@ -622,6 +685,156 @@
         setSyncStatus("同步失败 · 检查网络/令牌");
       })
       .finally(function(){ syncing=false; });
+  }
+
+  // ---- 版本时光机（本地快照 + 云端历史版本） ----
+  var SNAP_MAX=40, SNAP_GAP=20*60*1000; // 自动留档最短间隔 20 分钟
+  function saveSnaps(){
+    try{ localStorage.setItem(SNK,JSON.stringify(snaps)); }
+    catch(e){ snaps=snaps.slice(-15); try{localStorage.setItem(SNK,JSON.stringify(snaps));}catch(e2){} }
+  }
+  function snapDigest(t,a){ return JSON.stringify(t)+"|"+JSON.stringify(a); }
+  function takeSnap(reason,force){
+    var dg=snapDigest(tasks,archive), last=snaps[snaps.length-1];
+    if(last && last.dg===dg) return false;                  // 内容没变，不重复占位
+    if(!force && last && (Date.now()-last.at)<SNAP_GAP){     // 未到间隔：覆盖最近一条自动档
+      if(last.auto){
+        snaps[snaps.length-1]={id:last.id,at:Date.now(),reason:reason,auto:true,dg:dg,
+          tasks:JSON.parse(JSON.stringify(tasks)),archive:JSON.parse(JSON.stringify(archive))};
+        saveSnaps(); return true;
+      }
+      return false;
+    }
+    snaps.push({id:uid(),at:Date.now(),reason:reason||"自动留档",auto:!force,dg:dg,
+      tasks:JSON.parse(JSON.stringify(tasks)),archive:JSON.parse(JSON.stringify(archive))});
+    while(snaps.length>SNAP_MAX){                            // 超量优先淘汰最旧的自动档
+      var i=-1;
+      for(var k=0;k<snaps.length;k++){ if(snaps[k].auto){ i=k; break; } }
+      snaps.splice(i<0?0:i,1);
+    }
+    saveSnaps(); return true;
+  }
+  function maybeSnap(reason){ try{ takeSnap(reason,false); }catch(e){} }
+  function fmtWhen(ts){
+    var d=new Date(ts), t=new Date(), y=new Date(t.getTime()-86400000);
+    var hm=pad(d.getHours())+":"+pad(d.getMinutes());
+    if(d.toDateString()===t.toDateString()) return "今天 "+hm;
+    if(d.toDateString()===y.toDateString()) return "昨天 "+hm;
+    return (d.getMonth()+1)+"月"+d.getDate()+"日 "+hm;
+  }
+  function undoneOf(st,sa){
+    var out=(st||[]).filter(function(t){return !t.done;}).slice();
+    Object.keys(sa||{}).forEach(function(d){
+      (sa[d]||[]).forEach(function(t){ if(!t.done && !out.some(function(x){return x.id===t.id;})) out.push(t); });
+    });
+    return out;
+  }
+  var verSrc="local", verCloud=null, verCloudLoading=false;
+  function openVerModal(){
+    verSrc="local";
+    Array.prototype.forEach.call(document.querySelectorAll("#verModal .vt"),function(v){ v.classList.toggle("active", v.getAttribute("data-src")==="local"); });
+    renderVer();
+    document.getElementById("verModal").classList.add("show");
+  }
+  function renderVer(){
+    var box=document.getElementById("verList"), hint=document.getElementById("verHint");
+    if(!box) return;
+    if(verSrc==="local"){
+      hint.innerHTML="每次改动自动留档（最多 "+SNAP_MAX+" 份）。展开可看该版本<strong>当时还没完成</strong>的任务，可整版回滚，也可只把某一条捞回今天。";
+      var list=snaps.slice().reverse();
+      box.innerHTML = list.length ? list.map(function(s){ return verCard(s.id,"local",s.at,s.reason,s.tasks,s.archive); }).join("")
+        : '<div class="ver-empty">还没有本地快照。<br>点下面「立即存一份快照」先留个底。</div>';
+      return;
+    }
+    hint.innerHTML="云端版本来自你 GitHub Gist 的提交历史，<strong>换设备也能查</strong>。点条目载入明细后可单条捞回。";
+    if(!syncCfg||!syncCfg.token||!syncCfg.gist){ box.innerHTML='<div class="ver-empty">还没连上云端同步。<br>先到左下角「同步设置」填令牌。</div>'; return; }
+    if(verCloud){
+      box.innerHTML = verCloud.length ? verCloud.map(function(v){
+        return v.state ? verCard(v.sha,"cloud",v.at,"云端提交",v.state.tasks,v.state.archive) : verCardLazy(v.sha,v.at);
+      }).join("") : '<div class="ver-empty">云端还没有历史版本。</div>';
+      return;
+    }
+    if(verCloudLoading){ box.innerHTML='<div class="ver-empty">正在拉取云端历史…</div>'; return; }
+    verCloudLoading=true; box.innerHTML='<div class="ver-empty">正在拉取云端历史…</div>';
+    fetch("https://api.github.com/gists/"+syncCfg.gist+"/commits?per_page=25",{headers:ghHeaders()})
+      .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function(arr){
+        verCloud=(arr||[]).map(function(c){ return {sha:c.version, at:new Date(c.committed_at).getTime(), state:null}; });
+        verCloudLoading=false; if(verSrc==="cloud") renderVer();
+      })
+      .catch(function(){ verCloudLoading=false; var b=document.getElementById("verList"); if(b) b.innerHTML='<div class="ver-empty">拉取失败，检查网络或令牌权限（需 gist）。</div>'; });
+  }
+  function verCardLazy(sha,at){
+    return '<div class="ver-item" data-lazy="'+sha+'"><div class="ver-head"><div><div class="ver-when">'+fmtWhen(at)+'</div>'+
+      '<div class="ver-why">云端提交 · 点击载入明细</div></div><span class="ver-tag cloud">云端</span>'+
+      '<div class="ver-nums"><span class="ver-pill">未载入</span>'+
+      '<svg class="ver-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg></div></div></div>';
+  }
+  function verCard(id,kind,at,reason,st,sa){
+    var undone=undoneOf(st,sa), total=(st||[]).length;
+    var rows = undone.length ? undone.map(function(t){
+      var exists=tasks.some(function(x){return x.id===t.id;});
+      return '<div class="vt-row'+(exists?" exists":"")+'"><span class="nm">'+escapeHtml(t.title)+'</span>'+
+        '<span class="meta">'+(TYPE_LABEL[t.type]||"任务")+(t.date?" · "+t.date:"")+(t.time?" "+t.time:"")+'</span>'+
+        '<button class="pick" data-pick="'+id+'" data-tid="'+t.id+'">'+(exists?"已在列表":"捞回今天")+'</button></div>';
+    }).join("") : '<div class="ver-empty" style="padding:12px 0">这个版本里没有未完成任务。</div>';
+    return '<div class="ver-item" data-id="'+id+'" data-kind="'+kind+'">'+
+      '<div class="ver-head"><div><div class="ver-when">'+fmtWhen(at)+'</div><div class="ver-why">'+escapeHtml(reason||"")+'</div></div>'+
+      '<span class="ver-tag '+kind+'">'+(kind==="cloud"?"云端":"本地")+'</span>'+
+      '<div class="ver-nums"><span class="ver-pill">共 '+total+' 条</span>'+
+      '<span class="ver-pill'+(undone.length?" undone":"")+'">未完成 '+undone.length+'</span>'+
+      '<svg class="ver-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg></div></div>'+
+      '<div class="ver-body"><div class="vb-title">该版本未完成的任务</div>'+rows+
+      '<div class="ver-acts"><button class="btn" data-mergeall="'+id+'">全部未完成一键捞回</button>'+
+      '<button class="btn" data-rollback="'+id+'">整版回滚（覆盖当前）</button></div></div></div>';
+  }
+  function findSnapState(id){
+    var s=snaps.filter(function(x){return x.id===id;})[0];
+    if(s) return {tasks:s.tasks,archive:s.archive};
+    var c=(verCloud||[]).filter(function(x){return x.sha===id;})[0];
+    return c&&c.state?{tasks:c.state.tasks,archive:c.state.archive}:null;
+  }
+  function reviveTask(src){
+    var t=JSON.parse(JSON.stringify(src));
+    t.done=false; t.roll=true; t.recovered=true; t.updatedAt=Date.now();
+    if(!t.date) t.date=todayStr();
+    return t;
+  }
+  function pickBack(id,tid){
+    var st=findSnapState(id); if(!st) return;
+    var src=undoneOf(st.tasks,st.archive).filter(function(t){return t.id===tid;})[0];
+    if(!src){ toast("没找到这条任务"); return; }
+    if(tasks.some(function(x){return x.id===tid;})){ toast("这条已经在任务列表里了"); return; }
+    var t=reviveTask(src); tasks.push(t); save(); render(); renderVer(); toast("已捞回："+t.title);
+  }
+  function mergeAll(id){
+    var st=findSnapState(id); if(!st) return;
+    var list=undoneOf(st.tasks,st.archive).filter(function(t){return !tasks.some(function(x){return x.id===t.id;});});
+    if(!list.length){ toast("没有需要捞回的任务"); return; }
+    list.forEach(function(src){ tasks.push(reviveTask(src)); });
+    save(); render(); renderVer(); toast("已捞回 "+list.length+" 条未完成任务");
+  }
+  function rollback(id){
+    var st=findSnapState(id); if(!st) return;
+    if(!confirm("整版回滚会用这个版本覆盖当前所有任务和归档。\n回滚前会自动存一份当前快照，可以再滚回来。\n确定继续吗？")) return;
+    takeSnap("回滚前自动备份",true);
+    tasks=JSON.parse(JSON.stringify(st.tasks||[]));
+    archive=JSON.parse(JSON.stringify(st.archive||{}));
+    save(); render(); renderVer(); toast("已回滚到该版本");
+  }
+  function loadCloudOne(sha,el){
+    fetch("https://api.github.com/gists/"+syncCfg.gist+"/"+sha,{headers:ghHeaders()})
+      .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function(j){
+        var st=stateFromGist(j)||{tasks:[],archive:{}};
+        var item=(verCloud||[]).filter(function(x){return x.sha===sha;})[0];
+        if(item) item.state=st;
+        var wrap=document.createElement("div");
+        wrap.innerHTML=verCard(sha,"cloud",item?item.at:Date.now(),"云端提交",st.tasks,st.archive);
+        var node=wrap.firstChild; node.classList.add("open");
+        el.parentNode.replaceChild(node,el);
+      })
+      .catch(function(){ toast("载入这个版本失败"); });
   }
 
   function render(){
@@ -946,6 +1159,29 @@
     document.getElementById("syncMsg").textContent=syncCfg?"已连接，保存将立即同步。":"尚未连接。";
     document.getElementById("syncModal").classList.add("show");
   }
+  document.getElementById("verBtn").addEventListener("click",openVerModal);
+  document.getElementById("verClose").addEventListener("click",function(){document.getElementById("verModal").classList.remove("show");});
+  document.getElementById("verModal").addEventListener("click",function(e){if(e.target===this)this.classList.remove("show");});
+  document.getElementById("verSnapNow").addEventListener("click",function(){
+    var ok=takeSnap("手动存档",true); renderVer(); toast(ok?"已存一份快照":"内容没变化，无需重复存档");
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("#verModal .vt"),function(v){
+    v.addEventListener("click",function(){
+      verSrc=this.getAttribute("data-src");
+      Array.prototype.forEach.call(document.querySelectorAll("#verModal .vt"),function(x){x.classList.remove("active");});
+      this.classList.add("active"); renderVer();
+    });
+  });
+  document.getElementById("verList").addEventListener("click",function(e){
+    var pick=e.target.closest("[data-pick]");
+    if(pick){ if(!pick.parentNode.classList.contains("exists")) pickBack(pick.getAttribute("data-pick"),pick.getAttribute("data-tid")); return; }
+    var ma=e.target.closest("[data-mergeall]"); if(ma){ mergeAll(ma.getAttribute("data-mergeall")); return; }
+    var rb=e.target.closest("[data-rollback]"); if(rb){ rollback(rb.getAttribute("data-rollback")); return; }
+    var head=e.target.closest(".ver-head"); if(!head) return;
+    var item=head.parentNode;
+    if(item.getAttribute("data-lazy")){ loadCloudOne(item.getAttribute("data-lazy"),item); return; }
+    item.classList.toggle("open");
+  });
   document.getElementById("syncBtn").addEventListener("click",openSyncModal);
   document.getElementById("syncModal").addEventListener("click",function(e){if(e.target===this)this.classList.remove("show");});
   document.getElementById("syncDisconnect").addEventListener("click",function(){
