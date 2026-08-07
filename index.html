@@ -192,6 +192,11 @@
     box-shadow:0 4px 12px rgba(58,109,240,.3)}
   @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
   .today-top{display:flex;gap:18px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+  .overdue-block{background:linear-gradient(180deg,#fff5f5,#fff);border:1px solid #f3c9c9;border-left:4px solid var(--red);
+    border-radius:var(--radius);padding:14px 17px 16px;margin-bottom:16px;box-shadow:var(--shadow);animation:fadeUp .45s both}
+  .ob-head{display:flex;align-items:center;gap:8px;color:var(--red);font-weight:700;font-size:15px;margin-bottom:11px}
+  .ob-head svg{stroke:var(--red);fill:none;stroke-width:2}
+  .ob-n{font-weight:500;font-size:12.5px;color:#b06a6a}
   .ring-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 22px;
     box-shadow:var(--shadow);animation:fadeUp .5s both}
   .ring-wrap{position:relative;width:128px;height:128px;flex-shrink:0}
@@ -424,6 +429,7 @@
       <div class="foot">
         <button class="btn" id="syncDisconnect">断开</button>
         <button class="btn" id="syncTest">测试连接</button>
+        <button class="btn" id="syncRestore" title="用云端 Gist 快照覆盖本地">恢复云端快照</button>
         <button class="btn primary" id="syncSave">保存并同步</button>
       </div>
     </div>
@@ -563,7 +569,13 @@
 
   // ---- Sync (GitHub Gist) ----
   function mergeTasks(a,b){
-    var m={};(a||[]).concat(b||[]).forEach(function(t){var k=t.id;if(!m[k]||(t.updatedAt||0)>(m[k].updatedAt||0))m[k]=t;});
+    var m={};(a||[]).concat(b||[]).forEach(function(t){var k=t.id;if(!m[k]){m[k]=t;return;}
+      var cur=m[k], inc=t;
+      // 永不拿云端「已完成」覆盖本地「未完成」，避免丢工作
+      if(cur.done && !inc.done){ m[k]=inc; return; }
+      if(!cur.done && inc.done){ m[k]=cur; return; }
+      if((inc.updatedAt||0)>(cur.updatedAt||0)) m[k]=inc;
+    });
     return Object.keys(m).map(function(k){return m[k];});
   }
   function mergeArchive(a,b){
@@ -653,8 +665,10 @@
     if(view==="today") listTitle.textContent = todayFilter==="all"?"今日全部任务": todayFilter==="key"?"今日重点任务":"今天要处理";
     else listTitle.textContent="所有任务";
     var data=filtered();
-    if(view==="today"){ renderProjBox(data); } else { document.getElementById("projBox").style.display="none"; }
-    if(!data.length){
+    var overdue=(view==="today"&&todayFilter==="undone")?tasks.filter(function(t){return !t.done&&t.date&&t.date<todayStr();}):[];
+    if(overdue.length){var oids={};overdue.forEach(function(t){oids[t.id]=1;});data=data.filter(function(t){return !oids[t.id];});}
+    if(view==="today"){ renderProjBox(tasks.filter(function(t){return !t.done;})); } else { document.getElementById("projBox").style.display="none"; }
+    if(!data.length && !overdue.length){
       if(view==="today"){
         if(!tasks.length) area.innerHTML='<div class="empty">暂无任务，用上方输入框快速添加，或点右上角「新建任务」。</div>';
         else if(todayFilter==="undone") area.innerHTML='<div class="empty" style="padding:30px 0"><svg viewBox="0 0 24 24" width="70" height="70"><path d="M4 12l5 5L20 6"/></svg><div>今日任务已全部完成，辛苦了</div></div>';
@@ -665,9 +679,19 @@
       }
       return;
     }
+    var overdueBlock=null;
+    if(overdue.length){
+      overdueBlock=document.createElement("div");overdueBlock.className="overdue-block";
+      overdueBlock.innerHTML='<div class="ob-head"><svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 逾期待补 <span class="ob-n">'+overdue.length+' 项未完成，需今天处理</span></div>';
+      var ol=document.createElement("div");ol.className="list";
+      overdue.slice().sort(function(a,b){var ta=a.time||"99",tb=b.time||"99";return ta<tb?-1:1;}).forEach(function(t){ol.appendChild(cardEl(t));});
+      overdueBlock.appendChild(ol);
+    }
     var list=document.createElement("div");list.className="list";
     data.forEach(function(t){list.appendChild(cardEl(t));});
-    area.innerHTML="";area.appendChild(list);
+    area.innerHTML="";
+    if(overdueBlock) area.appendChild(overdueBlock);
+    area.appendChild(list);
   }
 
   function refreshProjList(){
@@ -934,6 +958,16 @@
     fetch(url,{headers:{"Authorization":"Bearer "+t,"Accept":"application/vnd.github+json"}})
       .then(function(r){document.getElementById("syncMsg").textContent=r.ok?"连接成功 ✓":"连接失败（"+r.status+"），检查令牌或 Gist ID";})
       .catch(function(){document.getElementById("syncMsg").textContent="连接失败，检查网络";});
+  });
+  document.getElementById("syncRestore").addEventListener("click",function(){
+    var t=document.getElementById("syncToken").value.trim(), g=document.getElementById("syncGist").value.trim();
+    if(!t||!g){document.getElementById("syncMsg").textContent="请先填写令牌与 Gist ID（若留空请先点「保存并同步」自动创建）";return;}
+    if(!confirm("将用云端 Gist 的快照覆盖本地任务，确定继续？建议先点「导出备份」留底。"))return;
+    fetch("https://api.github.com/gists/"+g,{headers:{"Authorization":"Bearer "+t,"Accept":"application/vnd.github+json"}})
+      .then(function(r){if(!r.ok)throw new Error("read "+r.status);return r.json();})
+      .then(function(j){var st=stateFromGist(j);if(!st||!st.tasks){document.getElementById("syncMsg").textContent="云端无有效数据";return;}
+        tasks=st.tasks; if(st.archive) archive=st.archive; save(); saveArchive(); render(); document.getElementById("syncMsg").textContent="已从云端恢复 "+tasks.length+" 项任务"; toast("已恢复云端快照");})
+      .catch(function(e){document.getElementById("syncMsg").textContent="恢复失败："+e.message;});
   });
   document.getElementById("syncSave").addEventListener("click",function(){
     var t=document.getElementById("syncToken").value.trim(), g=document.getElementById("syncGist").value.trim();
