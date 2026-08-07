@@ -156,7 +156,7 @@
   .archive-item.open .ah .arrow{transform:rotate(90deg)}
   .archive-item .abody{display:none;margin-top:10px}.archive-item.open .abody{display:block}
   .mini-card{display:flex;align-items:flex-start;gap:8px;padding:9px 0;border-top:1px dashed var(--line);font-size:13px}
-  .mini-card .st{width:17px;height:17px;border-radius:5px;flex-shrink:0;margin-top:2px;border:1px solid var(--line);
+  .mini-card .st{width:17px;height:17px;border-radius:5px;flex-shrink:0;margin-top:2px;border:1px solid var(--line);cursor:pointer;
     display:flex;align-items:center;justify-content:center;font-size:11px}
   .mini-card .st svg{width:11px;height:11px;stroke:#fff;fill:none;stroke-width:3;opacity:0}
   .mini-card.done .st{background:var(--green);border-color:var(--green)}
@@ -487,16 +487,25 @@
   function safeParse(s){try{return JSON.parse(s);}catch(e){return null;}}
 
   // ---- Daily auto archive ----
+  // 设计：未完成的旧任务始终保留在当前列表（标"顺延"），今天可直接调出完成；
+  // 已完成的旧任务移入历史归档快照（同份仅归档一次）。修改后必须 save() 持久化。
   function dailyArchive(){
     var today=todayStr();var changed=false;var remaining=[];
     tasks.forEach(function(t){
       if(t.date && t.date<today){
-        if(!archive[t.date]) archive[t.date]=[];
-        archive[t.date].push(t); changed=true;
-        if(cfg.autoRoll && !t.done){remaining.push(Object.assign({},t,{id:uid(),date:today,roll:true,done:false}));}
+        if(!t.done){ t.roll=true; remaining.push(t); }       // 未完成：留在今日可操作
+        else {
+          if(!t.archived){
+            if(!archive[t.date]) archive[t.date]=[];
+            archive[t.date].push(t); t.archived=true; changed=true;
+          }
+          remaining.push(t);
+        }
       } else { remaining.push(t); }
     });
-    if(changed){tasks=remaining;saveArchive();}
+    tasks=remaining;
+    if(changed) saveArchive();
+    save();
   }
 
   function counts(){
@@ -796,7 +805,7 @@
       var body=item.querySelector(".abody");
       arr.slice().sort(function(a,b){return (a.time||"99")<(b.time||"99")?-1:1;}).forEach(function(t){
         var mc=document.createElement("div");mc.className="mini-card"+(t.done?" done":"");
-        mc.innerHTML='<div class="st"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 6"/></svg></div><div><div class="tt">'+escapeHtml(t.title)+'</div>'+
+        mc.innerHTML='<div class="st" data-act="toggle" data-id="'+t.id+'"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 6"/></svg></div><div><div class="tt">'+escapeHtml(t.title)+'</div>'+
           '<div class="note-line">'+TYPE_LABEL[t.type]+(t.key?' · 重点':'')+(t.note?' · '+escapeHtml(t.note):'')+'</div></div>';
         body.appendChild(mc);
       });
