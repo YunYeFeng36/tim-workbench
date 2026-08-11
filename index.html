@@ -373,6 +373,47 @@
   .day-col .more{font-size:11px;color:var(--sub);text-align:center;margin-top:4px}
   .note-line{font-size:11px;color:var(--sub);margin-top:2px}
 
+  /* 周视图 · 月时间轴统计条 */
+  .ms-head{display:flex;align-items:center;gap:12px;margin-bottom:11px}
+  .ms-nav{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9px;
+    background:var(--panel);border:1px solid #222a33;color:var(--ink);cursor:pointer;transition:all .15s;flex-shrink:0}
+  .ms-nav:hover{border-color:var(--brand);color:var(--brand);box-shadow:0 0 0 3px rgba(52,211,153,.10)}
+  .ms-nav svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+  .ms-title{font-size:15px;font-weight:800;color:var(--ink);letter-spacing:.5px;display:flex;align-items:baseline;gap:9px}
+  .ms-title .sub{font-size:11px;font-weight:600;color:var(--sub);letter-spacing:0}
+  .ms-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:6px 2px 10px;cursor:grab;scrollbar-width:thin}
+  .ms-scroll.dragging{cursor:grabbing}
+  .ms-scroll.dragging *{user-select:none}
+  .ms-scroll::-webkit-scrollbar{height:7px}
+  .ms-scroll::-webkit-scrollbar-thumb{background:#222a33;border-radius:7px}
+  .ms-strip{display:flex;gap:5px;min-width:max-content}
+  .ms-cell{flex:0 0 auto;width:39px;background:var(--panel);border:1px solid #222a33;border-radius:11px;
+    padding:8px 0 9px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;position:relative;
+    transition:border-color .15s,background .15s,transform .12s}
+  .ms-cell:hover{border-color:rgba(52,211,153,.5);transform:translateY(-2px)}
+  .ms-cell.today{border-color:var(--brand);background:rgba(52,211,153,.07)}
+  .ms-cell.in-week{background:rgba(96,165,250,.06);border-color:rgba(96,165,250,.4)}
+  .ms-cell.weekend .ms-d{color:var(--sub)}
+  .ms-cell.today .ms-d{color:var(--brand)}
+  .ms-mlabel{font-size:9px;color:var(--sub);font-weight:700;position:absolute;top:-3px;left:50%;transform:translateX(-50%);
+    background:var(--bg1);padding:0 4px;border-radius:4px;opacity:0;white-space:nowrap}
+  .ms-cell.firstday .ms-mlabel{opacity:1}
+  .ms-wk{font-size:9px;color:var(--sub);font-weight:700;height:11px;letter-spacing:.3px}
+  .ms-wk.has{color:var(--focus)}
+  .ms-bar{width:18px;height:26px;border-radius:5px;background:#0e1310;display:flex;align-items:flex-end;overflow:hidden;border:1px solid #1b2320}
+  .ms-fill{width:100%;border-radius:4px 4px 0 0;background:linear-gradient(180deg,var(--brand2),var(--brand));transition:height .5s cubic-bezier(.4,0,.2,1)}
+  .ms-fill.over{background:linear-gradient(180deg,#fcd34d,#f59e0b)}
+  .ms-fill.zero{opacity:.22;background:#2a3630}
+  .ms-d{font-size:13px;font-weight:800;color:var(--ink)}
+
+  /* 周工具条 */
+  .week-bar{display:flex;align-items:center;gap:12px;margin:18px 0 12px}
+  .week-bar .wlabel{font-size:14px;font-weight:800;color:var(--ink);display:flex;align-items:baseline;gap:9px}
+  .week-bar .wlabel .sub{font-size:11px;font-weight:600;color:var(--sub)}
+  .wk-today{margin-left:4px;padding:6px 13px;border-radius:20px;border:1px solid #222a33;background:var(--panel);
+    font-size:12px;font-weight:700;color:var(--brand);cursor:pointer;transition:all .15s}
+  .wk-today:hover{border-color:var(--brand);box-shadow:0 0 0 3px rgba(52,211,153,.10)}
+
   /* 全部任务视图 */
   .all-bar{display:none;margin-bottom:16px}
   .all-bar.show{display:block;animation:fadeUp .4s both}
@@ -728,6 +769,9 @@
     undoStack=trashPending; localStorage.removeItem(TRK);
   }
   var view="today", syncing=false, syncTimer=null, lastRingPct=-1, allFilter="all", todayFilter="undone", projFilter="";
+  var _d0=new Date();var _wm=new Date(_d0);_wm.setDate(_d0.getDate()-((_d0.getDay()+6)%7));_wm.setHours(0,0,0,0);
+  var weekMonday=_wm, stripMonth={y:_wm.getFullYear(),m:_wm.getMonth()};
+  var dragState={el:null,down:false,startX:0,startLeft:0,moved:false};
   var TYPE_LABEL={work:"工作任务",outing:"外出任务",temp:"临时任务"};
 
   function load(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
@@ -1427,13 +1471,71 @@
   }
 
   function renderWeek(area){
-    var today=todayStr();var td=new Date();var monday=new Date(td);monday.setDate(td.getDate()-((td.getDay()+6)%7));
-    var days=[];for(var i=0;i<7;i++){var d=new Date(monday);d.setDate(monday.getDate()+i);days.push(d);}
+    var today=todayStr();
+    var mon=new Date(weekMonday);mon.setHours(0,0,0,0);
+    var days=[];for(var i=0;i<7;i++){var d=new Date(mon);d.setDate(mon.getDate()+i);days.push(d);}
     var map={};tasks.forEach(function(t){var k=t.date||today;if(!map[k])map[k]=[];map[k].push(t);});
     Object.keys(archive).forEach(function(k){(archive[k]||[]).forEach(function(t){(map[k]=map[k]||[]).push(t);});});
-    var grid=document.createElement("div");grid.className="week-grid";var wkNames=["周一","周二","周三","周四","周五","周六","周日"];
+    var counts=countByDate();
+    var dayKeys=days.map(dateKey);
+
+    // ===== 月时间轴统计条 =====
+    var sm=stripMonth;
+    var headEl=document.createElement("div");headEl.className="ms-head";
+    var mk=Object.keys(counts).filter(function(k){var p=k.split("-");return +p[0]===sm.y&&+p[1]===sm.m+1;});
+    var mDays=mk.length, mTotal=mk.reduce(function(s,k){return s+counts[k];},0);
+    headEl.innerHTML=
+      '<button class="ms-nav" id="msPrev" title="上个月"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>'+
+      '<div class="ms-title">'+sm.y+'年'+(sm.m+1)+'月<span class="sub">'+mDays+' 天有安排 · 共 '+mTotal+' 项</span></div>'+
+      '<button class="ms-nav" id="msNext" title="下个月"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>';
+
+    var stripScroll=document.createElement("div");stripScroll.className="ms-scroll";
+    var strip=document.createElement("div");strip.className="ms-strip";
+    var months=[sm.m-1,sm.m,sm.m+1].map(function(mm){var y=sm.y;if(mm<0){mm+=12;y--;}if(mm>11){mm-=12;y++;}return {y:y,m:mm};});
+    months.forEach(function(M){
+      var dim=new Date(M.y,M.m+1,0).getDate();
+      var mPrefix=M.y+"-"+pad(M.m+1)+"-";
+      var mKeys=Object.keys(counts).filter(function(k){return k.indexOf(mPrefix)===0;});
+      var mMax=Math.max(1,Math.max.apply(null,mKeys.map(function(k){return counts[k];})));
+      for(var dn=1;dn<=dim;dn++){
+        var ds=mPrefix+pad(dn);
+        var dd=new Date(M.y,M.m,dn);
+        var dow=dd.getDay();
+        var n=counts[ds]||0;
+        var inWeek=dayKeys.indexOf(ds)>=0;
+        var wkIdx=inWeek?dayKeys.indexOf(ds):-1;
+        var fillH=n===0?16:Math.max(20,Math.round(n/mMax*100));
+        var fillCls=n===0?" zero":(n>mMax*0.6?" over":"");
+        var cell=document.createElement("div");
+        cell.className="ms-cell"+(ds===today?" today":"")+(dow===0||dow===6?" weekend":"")+(dn===1?" firstday":"")+(inWeek?" in-week":"");
+        cell.setAttribute("data-ds",ds);
+        cell.innerHTML=
+          '<div class="ms-mlabel">'+(M.m+1)+'月</div>'+
+          '<div class="ms-wk'+(wkIdx>=0?" has":"")+'">'+(wkIdx>=0?("周"+["一","二","三","四","五","六","日"][wkIdx]):"·")+'</div>'+
+          '<div class="ms-bar"><div class="ms-fill '+fillCls+'" style="height:'+fillH+'%"></div></div>'+
+          '<div class="ms-d">'+dn+'</div>';
+        strip.appendChild(cell);
+      }
+    });
+    stripScroll.appendChild(strip);
+
+    // ===== 周工具条 =====
+    var ws=days[0], we=days[6];
+    var curMon=currentWeekMonday();
+    var rel=weekMonday>curMon?"未来周":(weekMonday<curMon?"过往周":"本周");
+    var wkBar=document.createElement("div");wkBar.className="week-bar";
+    wkBar.innerHTML=
+      '<button class="ms-nav" id="wkPrev" title="上一周"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>'+
+      '<div class="wlabel">'+(ws.getMonth()+1)+'/'+ws.getDate()+' – '+(we.getMonth()+1)+'/'+we.getDate()+
+        '<span class="sub">'+rel+'</span></div>'+
+      '<button class="ms-nav" id="wkNext" title="下一周"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>'+
+      (rel==="本周"?'':'<button class="wk-today" id="wkToday">回到本周</button>');
+
+    // ===== 周网格 =====
+    var grid=document.createElement("div");grid.className="week-grid";
+    var wkNames=["周一","周二","周三","周四","周五","周六","周日"];
     days.forEach(function(d,i){
-      var ds=d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+      var ds=dateKey(d);
       var col=document.createElement("div");col.className="day-col"+(ds===today?" today":"");
       var evs=(map[ds]||[]).slice().sort(function(a,b){return (a.time||"99")<(b.time||"99")?-1:1;});
       var html='<div class="dh">'+wkNames[i]+' <span class="dnum">'+(d.getMonth()+1)+'/'+d.getDate()+'</span>'+(ds===today?'<span class="badge">今天</span>':'')+'</div>';
@@ -1447,7 +1549,15 @@
       col.innerHTML=html;grid.appendChild(col);
     });
     var scroll=document.createElement("div");scroll.className="week-scroll";scroll.appendChild(grid);
-    area.innerHTML="";area.appendChild(scroll);
+
+    // ===== 组装 =====
+    area.innerHTML="";
+    area.appendChild(headEl);
+    area.appendChild(stripScroll);
+    area.appendChild(wkBar);
+    area.appendChild(scroll);
+
+    // ===== 本周构成饼图 =====
     var wc={work:0,outing:0,temp:0};
     Object.keys(map).forEach(function(k){(map[k]||[]).forEach(function(t){ if(wc[t.type]!=null) wc[t.type]++; });});
     var total_wk=wc.work+wc.outing+wc.temp;
@@ -1460,7 +1570,29 @@
       pieCard.innerHTML='<div class="week-pie-empty">本周暂无任务数据，添加任务后这里会显示立体构成图。</div>';
     }
     area.appendChild(pieCard);
+
+    // ===== 事件绑定 =====
+    document.getElementById("msPrev").onclick=function(){stripMonthStep(-1);};
+    document.getElementById("msNext").onclick=function(){stripMonthStep(1);};
+    document.getElementById("wkPrev").onclick=function(){weekStep(-7);};
+    document.getElementById("wkNext").onclick=function(){weekStep(7);};
+    var wt=document.getElementById("wkToday");if(wt)wt.onclick=function(){weekMonday=currentWeekMonday();stripMonth={y:weekMonday.getFullYear(),m:weekMonday.getMonth()};render();};
+    strip.querySelectorAll(".ms-cell").forEach(function(c){
+      c.onclick=function(){var ds=c.getAttribute("data-ds");var p=ds.split("-");weekMonday=mondayOf(new Date(+p[0],+p[1]-1,+p[2]));stripMonth={y:weekMonday.getFullYear(),m:weekMonday.getMonth()};render();};
+    });
+    bindDragScroll();
+    stripScroll.addEventListener("mousedown",function(e){dragState.el=stripScroll;dragState.down=true;dragState.moved=false;dragState.startX=e.pageX;dragState.startLeft=stripScroll.scrollLeft;stripScroll.classList.add("dragging");});
+    stripScroll.addEventListener("click",function(e){if(dragState.moved){e.stopPropagation();e.preventDefault();dragState.moved=false;}},true);
+    requestAnimationFrame(function(){scrollStripToWeek(stripScroll,days);});
   }
+  function dateKey(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());}
+  function mondayOf(d){var x=new Date(d);x.setDate(d.getDate()-((x.getDay()+6)%7));x.setHours(0,0,0,0);return x;}
+  function currentWeekMonday(){return mondayOf(new Date());}
+  function countByDate(){var m={};tasks.forEach(function(t){var k=t.date||todayStr();m[k]=(m[k]||0)+1;});Object.keys(archive).forEach(function(k){(archive[k]||[]).forEach(function(){m[k]=(m[k]||0)+1;});});return m;}
+  function stripMonthStep(n){var y=stripMonth.y,m=stripMonth.m+n;if(m<0){m+=12;y--;}if(m>11){m-=12;y++;}stripMonth={y:y,m:m};render();}
+  function weekStep(n){var x=new Date(weekMonday);x.setDate(x.getDate()+n);weekMonday=x;stripMonth={y:x.getFullYear(),m:x.getMonth()};render();}
+  function scrollStripToWeek(sc,days){var keys=days.map(dateKey);var cells=sc.querySelectorAll(".ms-cell");var first=null;cells.forEach(function(c){if(!first&&keys.indexOf(c.getAttribute("data-ds"))>=0)first=c;});if(first){var target=first.offsetLeft+first.offsetWidth/2-sc.clientWidth/2;sc.scrollLeft=Math.max(0,target);}}
+  function bindDragScroll(){if(window.__wbDrag)return;window.__wbDrag=true;window.addEventListener("mouseup",function(){dragState.down=false;if(dragState.el)dragState.el.classList.remove("dragging");});window.addEventListener("mousemove",function(e){if(!dragState.down||!dragState.el)return;var dx=e.pageX-dragState.startX;if(Math.abs(dx)>4)dragState.moved=true;dragState.el.scrollLeft=dragState.startLeft-dx;});}
   function renderArchive(area){
     var keys=Object.keys(archive).sort(function(a,b){return a<b?1:-1;});
     if(!keys.length){area.innerHTML='<div class="empty">还没有归档记录。每天跨零点时，当天的任务会自动归档到这里。</div>';return;}
